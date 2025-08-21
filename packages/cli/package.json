@@ -14,7 +14,7 @@
     "inquirer": "^8.2.6"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.3.0",
     "@types/inquirer": "^9.0.0",
     "typescript": "^5.0.0"
   }
