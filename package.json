@@ -1,0 +1,40 @@
+{
+  "name": "kontext",
+  "version": "1.0.0",
+  "description": "A CLI tool for managing development profiles and automating shell environment switching",
+  "main": "dist/cli/src/index.js",
+  "bin": {
+    "kontext": "dist/cli/src/index.js"
+  },
+  "scripts": {
+    "build": "pnpm run build:core && pnpm run build:cli && pnpm run build:main",
+    "build:core": "cd packages/core && pnpm run build",
+    "build:cli": "cd packages/cli && pnpm run build",
+    "build:main": "tsc",
+    "dev": "tsx packages/cli/src/index.ts",
+    "dev:build": "tsc --watch",
+    "dev:run": "nodemon",
+    "clean": "rm -rf dist && rm -rf packages/*/dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "pnpm run build && pkg dist/cli/src/index.js --out-path ./build --targets node18-macos-x64,node18-linux-x64,node18-win-x64",
+    "install-deps": "pnpm install"
+  },
+  "keywords": ["cli", "development", "profile", "git", "environment"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/js-yaml": "^4.0.0",
+    "typescript": "^5.0.0",
+    "pkg": "^5.8.1",
+    "nodemon": "^3.0.0",
+    "concurrently": "^8.0.0",
+    "tsx": "^4.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "js-yaml": "^4.1.0",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@kontext/core": ["../core/src"]
+    }
+  },
+  "include": ["src/**/*", "../core/src/**/*"],
+  "exclude": ["dist", "**/*.test.ts"]
+}
