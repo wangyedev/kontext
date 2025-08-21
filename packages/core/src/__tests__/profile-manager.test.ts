@@ -24,7 +24,7 @@ describe('ProfileManager', () => {
 
   beforeEach(() => {
     tempDir = path.join(os.tmpdir(), 'kontext-test-' + Date.now());
-    
+
     // Reset mocks
     jest.clearAllMocks();
 
@@ -33,14 +33,14 @@ describe('ProfileManager', () => {
 
     // Mock fs.mkdirSync
     mockFs.mkdirSync.mockImplementation(() => '');
-    
+
     // Mock fs.promises methods
     (mockFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
     (mockFs.promises.readFile as jest.Mock).mockResolvedValue('');
     (mockFs.promises.readdir as jest.Mock).mockResolvedValue([]);
     (mockFs.promises.access as jest.Mock).mockResolvedValue(undefined);
     (mockFs.promises.unlink as jest.Mock).mockResolvedValue(undefined);
-    
+
     profileManager = new ProfileManager(tempDir);
   });
 
@@ -96,7 +96,6 @@ describe('ProfileManager', () => {
   });
 
   describe('listProfiles', () => {
-
     it('should return empty array if profiles directory does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
 

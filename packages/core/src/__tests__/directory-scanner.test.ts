@@ -104,7 +104,9 @@ describe('DirectoryScanner', () => {
     it('should handle file creation errors gracefully', async () => {
       (mockFs.promises.writeFile as jest.Mock).mockRejectedValue(new Error('Write failed'));
 
-      await expect(DirectoryScanner.createProfileFile(testDir, 'work')).rejects.toThrow('Write failed');
+      await expect(DirectoryScanner.createProfileFile(testDir, 'work')).rejects.toThrow(
+        'Write failed'
+      );
     });
 
     it('should validate profile name before creating file', async () => {
