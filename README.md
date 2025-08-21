@@ -17,16 +17,19 @@ Kontext allows developers to define and switch between distinct development prof
 
 ## Installation
 
-1. Download the Kontext executable for your platform from the releases page
-2. Place it in your PATH (e.g., `/usr/local/bin/kontext`)
-3. Run the initialization command:
+Install Kontext globally via npm:
+
+```bash
+npm install -g kontext-cli
+```
+
+Then set up shell integration:
 
 ```bash
 kontext init
 ```
 
-4. Follow the instructions to add the shell hook to your configuration file
-5. Restart your shell or source your config file
+Follow the instructions to add the shell hook to your configuration file, then restart your shell or source your config file.
 
 ## Quick Start
 
@@ -58,16 +61,33 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 
 ## Commands
 
-- `kontext init` - Set up shell integration
+### Profile Management
 - `kontext new [profile]` - Create a new profile interactively
-- `kontext list` - List all available profiles
+- `kontext list [--detailed]` - List all available profiles
+- `kontext show <profile>` - Display detailed profile configuration
+- `kontext edit <profile>` - Edit a profile in your default editor
+
+### Profile Activation
+- `kontext current [--detailed] [--edit]` - Show the currently active profile
 - `kontext switch <profile>` - Manually switch to a profile
-- `kontext current` - Show the currently active profile
+
+### Setup & Configuration
+- `kontext init` - Set up shell integration
+- `kontext config` - Show configuration information and helpful commands
+
+### Advanced
 - `kontext hook init` - Generate shell integration script (used internally)
 
-## Profile Configuration
+## Configuration Management
 
-Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Here's an example:
+### Profile Files
+Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Each profile can configure:
+
+- **Git Identity**: Automatically set `user.name` and `user.email`
+- **Environment Variables**: Export custom environment variables
+- **Shell Scripts**: Source additional shell configuration
+
+### Example Profile Configuration
 
 ```yaml
 name: work
@@ -78,8 +98,44 @@ environment:
   variables:
     NODE_ENV: development
     API_URL: https://api.company.com
+    AWS_PROFILE: work
   script_path: ~/.config/kontext/scripts/work.sh
 ```
+
+### Managing Configurations
+
+**View profile details:**
+```bash
+kontext show work
+```
+
+**Edit a profile:**
+```bash
+kontext edit work          # Opens in your default editor
+kontext current --edit     # Edit currently active profile
+```
+
+**Find configuration files:**
+```bash
+kontext config             # Shows all configuration locations
+```
+
+### Directory Association
+
+Create a `.kontext-profile` file in any directory to automatically activate a profile:
+
+```bash
+# In your project directory
+echo "work" > .kontext-profile
+
+# Test it works
+kontext current
+```
+
+**Pro Tips:**
+- Subdirectories inherit parent directory profiles
+- Use `kontext list --detailed` to see all profile configurations
+- Environment variables are only active when the profile is loaded via shell integration
 
 ## Development
 

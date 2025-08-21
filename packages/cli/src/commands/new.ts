@@ -214,10 +214,30 @@ export const newCommand = new Command('new')
       console.log('');
       console.log(success(`Profile "${profileName}" created successfully!`));
       console.log('');
-      console.log('Next steps:');
-      console.log('1. Navigate to a project directory');
-      console.log(`2. Run: echo "${profileName}" > .kontext-profile`);
-      console.log('3. The profile will automatically activate when you enter that directory');
+      console.log(header('What\'s Next?'));
+      console.log('');
+      console.log(info('📁 Profile Location:'));
+      console.log(`   ${profileManager.getProfilesPath()}/${profileName}.yml`);
+      console.log('');
+      console.log(info('🛠️  Useful Commands:'));
+      console.log(`   kontext show ${profileName}     # View your new profile`);
+      console.log(`   kontext edit ${profileName}     # Edit the profile configuration`);
+      console.log(`   kontext switch ${profileName}   # Test the profile manually`);
+      console.log('');
+      console.log(info('📂 Set Up Directory Association:'));
+      console.log('   1. Navigate to your project directory:');
+      console.log('      cd ~/path/to/your/project');
+      console.log('');
+      console.log(`   2. Create profile association:`);
+      console.log(`      echo "${profileName}" > .kontext-profile`);
+      console.log('');
+      console.log('   3. Test it works:');
+      console.log('      kontext current');
+      console.log('');
+      console.log(info('💡 Pro Tips:'));
+      console.log('   • The profile activates automatically when you cd into the directory');
+      console.log('   • Subdirectories inherit the parent\'s profile');
+      console.log('   • Use kontext config for more help and examples');
       
     } catch (err) {
       console.error(error(`Failed to create profile: ${err instanceof Error ? err.message : 'Unknown error'}`));

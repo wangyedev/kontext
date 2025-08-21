@@ -5,6 +5,7 @@ import { success, error, info, profile as profileFormat, header } from '../utils
 export const currentCommand = new Command('current')
   .description('Show the currently active profile')
   .option('-d, --detailed', 'Show detailed profile information')
+  .option('-e, --edit', 'Open current profile for editing')
   .action(async (options) => {
     try {
       // Check environment variable first
@@ -23,6 +24,26 @@ export const currentCommand = new Command('current')
       }
       
       const activeProfile = envProfile || dirProfile;
+      
+      // Handle edit option
+      if (options.edit) {
+        const { execSync } = require('child_process');
+        const profileManager = new ProfileManager();
+        const profilePath = `${profileManager.getProfilesPath()}/${activeProfile}.yml`;
+        
+        console.log(info(`Opening ${profileFormat(activeProfile!)} profile for editing...`));
+        
+        const editor = process.env.EDITOR || process.env.VISUAL || 'vim';
+        try {
+          execSync(`${editor} "${profilePath}"`, { stdio: 'inherit' });
+          console.log('');
+          console.log(success('Profile updated!'));
+        } catch (err) {
+          console.log(error(`Failed to open editor. You can edit the file manually at: ${profilePath}`));
+        }
+        return;
+      }
+      
       const profileSource = envProfile ? 'environment' : 'directory';
       
       console.log(header('Current Profile'));

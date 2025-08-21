@@ -8,6 +8,9 @@ import { listCommand } from './commands/list';
 import { switchCommand } from './commands/switch';
 import { currentCommand } from './commands/current';
 import { hookCommand } from './commands/hook';
+import { editCommand } from './commands/edit';
+import { showCommand } from './commands/show';
+import { configCommand } from './commands/config';
 
 const program = new Command();
 
@@ -20,8 +23,11 @@ program
 program.addCommand(initCommand);
 program.addCommand(newCommand);
 program.addCommand(listCommand);
+program.addCommand(showCommand);
+program.addCommand(editCommand);
 program.addCommand(switchCommand);
 program.addCommand(currentCommand);
+program.addCommand(configCommand);
 program.addCommand(hookCommand);
 
 // Global error handling
