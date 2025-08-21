@@ -5,7 +5,17 @@ import { ProfileManager } from '../profile-manager';
 import { Profile } from '../types';
 
 // Mock fs module
-jest.mock('fs');
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  promises: {
+    writeFile: jest.fn(),
+    readFile: jest.fn(),
+    readdir: jest.fn(),
+    access: jest.fn(),
+    unlink: jest.fn(),
+  },
+}));
 const mockFs = fs as jest.Mocked<typeof fs>;
 
 describe('ProfileManager', () => {
@@ -14,8 +24,7 @@ describe('ProfileManager', () => {
 
   beforeEach(() => {
     tempDir = path.join(os.tmpdir(), 'kontext-test-' + Date.now());
-    profileManager = new ProfileManager(tempDir);
-
+    
     // Reset mocks
     jest.clearAllMocks();
 
@@ -24,6 +33,15 @@ describe('ProfileManager', () => {
 
     // Mock fs.mkdirSync
     mockFs.mkdirSync.mockImplementation(() => '');
+    
+    // Mock fs.promises methods
+    (mockFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+    (mockFs.promises.readFile as jest.Mock).mockResolvedValue('');
+    (mockFs.promises.readdir as jest.Mock).mockResolvedValue([]);
+    (mockFs.promises.access as jest.Mock).mockResolvedValue(undefined);
+    (mockFs.promises.unlink as jest.Mock).mockResolvedValue(undefined);
+    
+    profileManager = new ProfileManager(tempDir);
   });
 
   describe('constructor', () => {
@@ -55,10 +73,7 @@ describe('ProfileManager', () => {
 
     beforeEach(() => {
       // Mock fs.promises.writeFile
-      mockFs.promises = {
-        ...mockFs.promises,
-        writeFile: jest.fn().mockResolvedValue(undefined),
-      };
+      (mockFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
     });
 
     it('should create a new profile successfully', async () => {
@@ -81,12 +96,6 @@ describe('ProfileManager', () => {
   });
 
   describe('listProfiles', () => {
-    beforeEach(() => {
-      mockFs.promises = {
-        ...mockFs.promises,
-        readdir: jest.fn(),
-      };
-    });
 
     it('should return empty array if profiles directory does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
