@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
-import { ProfileManager, Profile, EnvironmentManager } from '../../../core/src';
+import { ProfileManager, Profile, EnvironmentManager, HookManager } from '../../../core/src';
 import { success, error, warning, info, profile as profileFormat, header } from '../utils/prompt-utils';
 
 export const newCommand = new Command('new')
@@ -157,6 +157,52 @@ export const newCommand = new Command('new')
         }
       }
       
+      // Hooks configuration
+      console.log('');
+      console.log(info('Hooks (optional)'));
+      console.log('Hooks allow you to run custom scripts when the profile is activated or deactivated.');
+      const hooksAnswers = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'setupHooks',
+          message: 'Would you like to configure hooks?',
+          default: false
+        },
+        {
+          type: 'input',
+          name: 'activateHook',
+          message: 'Path to activation hook script (runs when profile activates):',
+          when: (answers) => answers.setupHooks,
+          validate: (input: string) => !input.trim() || input.trim() ? true : 'Hook path cannot be empty if provided'
+        },
+        {
+          type: 'input',
+          name: 'deactivateHook',
+          message: 'Path to deactivation hook script (runs when profile deactivates):',
+          when: (answers) => answers.setupHooks,
+          validate: (input: string) => !input.trim() || input.trim() ? true : 'Hook path cannot be empty if provided'
+        }
+      ]);
+      
+      // Validate hook paths if provided
+      if (hooksAnswers.setupHooks) {
+        if (hooksAnswers.activateHook && hooksAnswers.activateHook.trim()) {
+          try {
+            await HookManager.validateHookPath(hooksAnswers.activateHook.trim());
+          } catch (err) {
+            console.log(warning(`Activation hook validation failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          }
+        }
+        
+        if (hooksAnswers.deactivateHook && hooksAnswers.deactivateHook.trim()) {
+          try {
+            await HookManager.validateHookPath(hooksAnswers.deactivateHook.trim());
+          } catch (err) {
+            console.log(warning(`Deactivation hook validation failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          }
+        }
+      }
+      
       // Create profile object
       const profile: Profile = {
         name: profileName,
@@ -167,6 +213,10 @@ export const newCommand = new Command('new')
         environment: (Object.keys(environmentVariables).length > 0 || scriptAnswers.setupScript) ? {
           variables: Object.keys(environmentVariables).length > 0 ? environmentVariables : undefined,
           scriptPath: scriptAnswers.setupScript ? scriptAnswers.scriptPath : undefined
+        } : undefined,
+        hooks: hooksAnswers.setupHooks && (hooksAnswers.activateHook?.trim() || hooksAnswers.deactivateHook?.trim()) ? {
+          onActivate: hooksAnswers.activateHook?.trim() || undefined,
+          onDeactivate: hooksAnswers.deactivateHook?.trim() || undefined
         } : undefined
       };
       
@@ -192,6 +242,12 @@ export const newCommand = new Command('new')
       }
       if (profile.environment?.scriptPath) {
         console.log(`Shell script: ${profile.environment.scriptPath}`);
+      }
+      if (profile.hooks?.onActivate) {
+        console.log(`Activation hook: ${profile.hooks.onActivate}`);
+      }
+      if (profile.hooks?.onDeactivate) {
+        console.log(`Deactivation hook: ${profile.hooks.onDeactivate}`);
       }
       
       // Confirm creation

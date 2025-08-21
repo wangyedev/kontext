@@ -45,6 +45,10 @@ export class ProfileManager {
         variables: config.environment.variables,
         scriptPath: config.environment.script_path,
       } : undefined,
+      hooks: config.hooks ? {
+        onActivate: config.hooks.on_activate,
+        onDeactivate: config.hooks.on_deactivate,
+      } : undefined,
     };
   }
 
@@ -58,6 +62,10 @@ export class ProfileManager {
       environment: profile.environment ? {
         variables: profile.environment.variables,
         script_path: profile.environment.scriptPath,
+      } : undefined,
+      hooks: profile.hooks ? {
+        on_activate: profile.hooks.onActivate,
+        on_deactivate: profile.hooks.onDeactivate,
       } : undefined,
     };
   }

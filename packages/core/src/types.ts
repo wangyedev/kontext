@@ -8,6 +8,10 @@ export interface Profile {
     variables?: Record<string, string>;
     scriptPath?: string;
   };
+  hooks?: {
+    onActivate?: string;
+    onDeactivate?: string;
+  };
 }
 
 export interface ProfileConfig {
@@ -19,6 +23,10 @@ export interface ProfileConfig {
   environment?: {
     variables?: Record<string, string>;
     script_path?: string;
+  };
+  hooks?: {
+    on_activate?: string;
+    on_deactivate?: string;
   };
 }
 

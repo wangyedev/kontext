@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { ProfileManager } from '../../../core/src';
-import { success, error, info, profile as profileFormat, header, path, divider } from '../utils/prompt-utils';
+import { error, info, profile as profileFormat, header, path, divider } from '../utils/prompt-utils';
 
 export const showCommand = new Command('show')
   .description('Display detailed profile configuration')
@@ -57,6 +57,18 @@ export const showCommand = new Command('show')
         console.log('');
       }
       
+      // Hooks
+      if (profile.hooks?.onActivate || profile.hooks?.onDeactivate) {
+        console.log(info('Hooks:'));
+        if (profile.hooks.onActivate) {
+          console.log(`  Activation: ${profile.hooks.onActivate}`);
+        }
+        if (profile.hooks.onDeactivate) {
+          console.log(`  Deactivation: ${profile.hooks.onDeactivate}`);
+        }
+        console.log('');
+      }
+      
       // Show empty sections
       if (!profile.git?.userName && !profile.git?.userEmail) {
         console.log(info('Git Configuration: Not configured'));
@@ -70,6 +82,11 @@ export const showCommand = new Command('show')
       
       if (!profile.environment?.scriptPath) {
         console.log(info('Shell Script: None'));
+        console.log('');
+      }
+      
+      if (!profile.hooks?.onActivate && !profile.hooks?.onDeactivate) {
+        console.log(info('Hooks: None'));
         console.log('');
       }
       

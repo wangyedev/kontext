@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { Profile } from './types';
+import { HookManager } from './hook-manager';
 
 export class EnvironmentManager {
   private static currentProfile: string | null = null;
@@ -67,6 +68,20 @@ export class EnvironmentManager {
       '',
     ];
     
+    // Execute activation hook first
+    if (profile.hooks?.onActivate) {
+      const hookPath = HookManager.resolveHookPath(profile.hooks.onActivate);
+      commands.push('# Execute activation hook');
+      commands.push(`if [ -f "${hookPath}" ]; then`);
+      commands.push(`  export KONTEXT_PROFILE="${profile.name}"`);
+      commands.push(`  export KONTEXT_HOOK_TYPE="activate"`);
+      commands.push(`  bash "${hookPath}" 2>/dev/null || echo "Warning: Activation hook failed" >&2`);
+      commands.push('else');
+      commands.push(`  echo "Warning: Activation hook not found: ${hookPath}" >&2`);
+      commands.push('fi');
+      commands.push('');
+    }
+    
     // Add environment variables
     if (profile.environment?.variables) {
       commands.push('# Environment variables');
@@ -117,6 +132,20 @@ export class EnvironmentManager {
     // Unset profile tracking
     commands.push('# Clear current profile');
     commands.push('unset KONTEXT_CURRENT_PROFILE');
+    
+    // Execute deactivation hook last
+    if (profile?.hooks?.onDeactivate) {
+      const hookPath = HookManager.resolveHookPath(profile.hooks.onDeactivate);
+      commands.push('');
+      commands.push('# Execute deactivation hook');
+      commands.push(`if [ -f "${hookPath}" ]; then`);
+      commands.push(`  export KONTEXT_PROFILE="${profile.name}"`);
+      commands.push(`  export KONTEXT_HOOK_TYPE="deactivate"`);
+      commands.push(`  bash "${hookPath}" 2>/dev/null || echo "Warning: Deactivation hook failed" >&2`);
+      commands.push('else');
+      commands.push(`  echo "Warning: Deactivation hook not found: ${hookPath}" >&2`);
+      commands.push('fi');
+    }
     
     return commands.join('\n');
   }

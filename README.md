@@ -13,6 +13,7 @@ Kontext allows developers to define and switch between distinct development prof
 - **Git Identity Management**: Automatically configure Git user name and email based on the active profile
 - **Environment Variables**: Set profile-specific environment variables
 - **Shell Script Integration**: Source custom shell scripts for profile-specific configurations
+- **Hooks**: Execute custom scripts on profile activation and deactivation
 - **Cross-shell Support**: Works with Bash, Zsh, and Fish shells
 
 ## Installation
@@ -54,6 +55,7 @@ echo "work" > .kontext-profile
 
 Now whenever you `cd` into that directory (or any subdirectory), Kontext will automatically:
 - Switch to the "work" profile
+- Execute activation hooks (if configured)
 - Update your Git configuration
 - Set environment variables
 - Source any profile-specific shell scripts
@@ -86,6 +88,7 @@ Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Each profile
 - **Git Identity**: Automatically set `user.name` and `user.email`
 - **Environment Variables**: Export custom environment variables
 - **Shell Scripts**: Source additional shell configuration
+- **Hooks**: Execute custom scripts on activation and deactivation
 
 ### Example Profile Configuration
 
@@ -100,6 +103,9 @@ environment:
     API_URL: https://api.company.com
     AWS_PROFILE: work
   script_path: ~/.config/kontext/scripts/work.sh
+hooks:
+  on_activate: ~/.config/kontext/hooks/work-activate.sh
+  on_deactivate: ~/.config/kontext/hooks/work-deactivate.sh
 ```
 
 ### Managing Configurations
@@ -136,6 +142,80 @@ kontext current
 - Subdirectories inherit parent directory profiles
 - Use `kontext list --detailed` to see all profile configurations
 - Environment variables are only active when the profile is loaded via shell integration
+
+## Hooks
+
+Hooks allow you to execute custom scripts when profiles are activated or deactivated, enabling powerful automation and environment setup.
+
+### Hook Types
+
+- **Activation Hooks** (`on_activate`): Run when a profile is activated
+- **Deactivation Hooks** (`on_deactivate`): Run when a profile is deactivated
+
+### Hook Environment Variables
+
+When hooks execute, they receive these environment variables:
+- `KONTEXT_PROFILE`: Name of the profile being activated/deactivated
+- `KONTEXT_HOOK_TYPE`: Either "activate" or "deactivate"
+
+### Example Hook Scripts
+
+**Activation Hook** (`~/.config/kontext/hooks/work-activate.sh`):
+```bash
+#!/bin/bash
+echo "🚀 Starting work session for $KONTEXT_PROFILE"
+
+# Start development services
+docker-compose up -d database redis
+
+# Switch Node.js version
+nvm use 18
+
+# Connect to work VPN
+sudo vpn-connect work-profile
+
+# Send notification
+osascript -e 'display notification "Work environment activated" with title "Kontext"'
+```
+
+**Deactivation Hook** (`~/.config/kontext/hooks/work-deactivate.sh`):
+```bash
+#!/bin/bash
+echo "🛑 Ending work session for $KONTEXT_PROFILE"
+
+# Stop development services
+docker-compose down
+
+# Disconnect VPN
+sudo vpn-disconnect
+
+# Backup work
+rsync -av ~/work/ ~/backups/work-$(date +%Y%m%d)/
+
+# Send notification
+osascript -e 'display notification "Work environment deactivated" with title "Kontext"'
+```
+
+### Hook Configuration
+
+Add hooks to your profile YAML file:
+
+```yaml
+hooks:
+  on_activate: /path/to/activate-script.sh
+  on_deactivate: /path/to/deactivate-script.sh
+```
+
+Hooks support:
+- Absolute paths (`/usr/local/bin/script.sh`)
+- Home directory expansion (`~/scripts/hook.sh`)
+- Relative paths (resolved from current directory)
+
+### Error Handling
+
+- Hook failures generate warnings but don't prevent profile switching
+- Hooks have a 30-second timeout to prevent hanging
+- Failed hooks are logged to stderr for debugging
 
 ## Development
 
