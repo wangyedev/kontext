@@ -10,7 +10,7 @@
   "dependencies": {
     "@kontext/core": "workspace:*",
     "commander": "^11.0.0",
-    "chalk": "^4.1.2",
+    "chalk": "^5.6.0",
     "inquirer": "^8.2.6"
   },
   "devDependencies": {
