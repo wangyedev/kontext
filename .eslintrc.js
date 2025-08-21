@@ -4,12 +4,12 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended',
   ],
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: 'module',
-    project: './tsconfig.json',
+    project: ['./tsconfig.json', './packages/*/tsconfig.json'],
   },
   env: {
     node: true,
@@ -39,5 +39,6 @@ module.exports = {
     '*.js', // Ignore compiled JS files
     'jest.config.js',
     'jest.setup.js',
+    '**/__tests__/**/*.ts', // Ignore test files from strict linting
   ],
 };

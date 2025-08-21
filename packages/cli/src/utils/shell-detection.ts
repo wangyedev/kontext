@@ -21,52 +21,52 @@ export function detectShell(): ShellInfo {
       return {
         type: 'bash',
         configFile: '~/.bashrc',
-        command: 'bash'
+        command: 'bash',
       };
-    
+
     case 'zsh':
       return {
         type: 'zsh',
         configFile: '~/.zshrc',
-        command: 'zsh'
+        command: 'zsh',
       };
-    
+
     case 'fish':
       return {
         type: 'fish',
         configFile: '~/.config/fish/config.fish',
-        command: 'fish'
+        command: 'fish',
       };
-    
+
     default:
       // Try to detect from parent process if SHELL is not set
       try {
         const parentPid = process.ppid;
         const parentCommand = execSync(`ps -p ${parentPid} -o comm=`, { encoding: 'utf8' }).trim();
-        
+
         if (parentCommand.includes('bash')) {
           return {
             type: 'bash',
             configFile: '~/.bashrc',
-            command: 'bash'
+            command: 'bash',
           };
         }
-        
+
         if (parentCommand.includes('zsh')) {
           return {
             type: 'zsh',
             configFile: '~/.zshrc',
-            command: 'zsh'
+            command: 'zsh',
           };
         }
       } catch {
         // Ignore errors in detection
       }
-      
+
       return {
         type: 'unknown',
         configFile: '~/.profile',
-        command: 'sh'
+        command: 'sh',
       };
   }
 }
@@ -76,17 +76,17 @@ export function detectShell(): ShellInfo {
  */
 export function generateHookCommand(shellType: ShellType): string {
   const hookInit = 'eval "$(kontext hook init)"';
-  
+
   switch (shellType) {
     case 'bash':
       return `echo '${hookInit}' >> ~/.bashrc`;
-    
+
     case 'zsh':
       return `echo '${hookInit}' >> ~/.zshrc`;
-    
+
     case 'fish':
       return `echo '${hookInit}' >> ~/.config/fish/config.fish`;
-    
+
     default:
       return `echo '${hookInit}' >> ~/.profile`;
   }
@@ -97,17 +97,17 @@ export function generateHookCommand(shellType: ShellType): string {
  */
 export function getShellConfigPath(shellType: ShellType): string {
   const homeDir = os.homedir();
-  
+
   switch (shellType) {
     case 'bash':
       return `${homeDir}/.bashrc`;
-    
+
     case 'zsh':
       return `${homeDir}/.zshrc`;
-    
+
     case 'fish':
       return `${homeDir}/.config/fish/config.fish`;
-    
+
     default:
       return `${homeDir}/.profile`;
   }

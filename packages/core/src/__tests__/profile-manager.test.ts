@@ -15,13 +15,13 @@ describe('ProfileManager', () => {
   beforeEach(() => {
     tempDir = path.join(os.tmpdir(), 'kontext-test-' + Date.now());
     profileManager = new ProfileManager(tempDir);
-    
+
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Mock fs.existsSync to return false initially
     mockFs.existsSync.mockReturnValue(false);
-    
+
     // Mock fs.mkdirSync
     mockFs.mkdirSync.mockImplementation(() => '');
   });
@@ -63,7 +63,7 @@ describe('ProfileManager', () => {
 
     it('should create a new profile successfully', async () => {
       await profileManager.createProfile(testProfile);
-      
+
       expect(mockFs.promises.writeFile).toHaveBeenCalledWith(
         path.join(tempDir, 'test.yml'),
         expect.stringContaining('name: test'),
@@ -73,7 +73,7 @@ describe('ProfileManager', () => {
 
     it('should throw error if profile already exists', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      
+
       await expect(profileManager.createProfile(testProfile)).rejects.toThrow(
         'Profile "test" already exists'
       );
@@ -90,7 +90,7 @@ describe('ProfileManager', () => {
 
     it('should return empty array if profiles directory does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
-      
+
       const profiles = await profileManager.listProfiles();
       expect(profiles).toEqual([]);
     });
@@ -102,7 +102,7 @@ describe('ProfileManager', () => {
         'personal.yaml',
         'temp.txt', // Should be filtered out
       ]);
-      
+
       const profiles = await profileManager.listProfiles();
       expect(profiles).toEqual(['work', 'personal']);
     });
@@ -111,7 +111,7 @@ describe('ProfileManager', () => {
   describe('profileExists', () => {
     it('should return true if profile file exists', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      
+
       const exists = await profileManager.profileExists('test');
       expect(exists).toBe(true);
       expect(mockFs.existsSync).toHaveBeenCalledWith(path.join(tempDir, 'test.yml'));
@@ -119,7 +119,7 @@ describe('ProfileManager', () => {
 
     it('should return false if profile file does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
-      
+
       const exists = await profileManager.profileExists('test');
       expect(exists).toBe(false);
     });

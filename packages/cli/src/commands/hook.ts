@@ -1,19 +1,23 @@
 import { Command } from 'commander';
-import { DirectoryScanner, ProfileManager, GitConfigManager, EnvironmentManager } from '../../../core/src';
+import {
+  DirectoryScanner,
+  ProfileManager,
+  GitConfigManager,
+  EnvironmentManager,
+} from '../../../core/src';
 import { detectShell } from '../utils/shell-detection';
 
-export const hookCommand = new Command('hook')
-  .description('Generate shell integration scripts');
+export const hookCommand = new Command('hook').description('Generate shell integration scripts');
 
 hookCommand
   .command('init')
   .description('Generate shell initialization hook')
   .action(() => {
     const shellInfo = detectShell();
-    
+
     // Generate shell-specific hook script
     const hookScript = generateHookScript(shellInfo.type);
-    
+
     // Output the script to stdout so it can be eval'd
     console.log(hookScript);
   });
@@ -62,7 +66,9 @@ __kontext_prompt_info() {
 
   switch (shellType) {
     case 'bash':
-      return script + `
+      return (
+        script +
+        `
 # Bash-specific integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
@@ -83,10 +89,13 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
 
     case 'zsh':
-      return script + `
+      return (
+        script +
+        `
 # Zsh-specific integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
@@ -104,7 +113,8 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
 
     case 'fish':
       return `
@@ -153,7 +163,9 @@ end
 `;
 
     default:
-      return script + `
+      return (
+        script +
+        `
 # Generic shell integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
@@ -168,7 +180,8 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
   }
 }
 
@@ -195,11 +208,11 @@ hookCommand
     try {
       const profileManager = new ProfileManager();
       const profile = await profileManager.getProfile(profileName);
-      
+
       if (!profile) {
         process.exit(1);
       }
-      
+
       // Apply git configuration
       if (GitConfigManager.isGitAvailable()) {
         try {
@@ -208,11 +221,10 @@ hookCommand
           // Silent failure for git config
         }
       }
-      
+
       // Generate and output activation script
       const activationScript = EnvironmentManager.generateActivationScript(profile);
       console.log(activationScript);
-      
     } catch (err) {
       // Silent failure for hook operations
       process.exit(1);
@@ -227,7 +239,7 @@ hookCommand
     try {
       const profileManager = new ProfileManager();
       const profile = await profileManager.getProfile(profileName);
-      
+
       // Clear git configuration
       if (GitConfigManager.isGitAvailable()) {
         try {
@@ -236,11 +248,12 @@ hookCommand
           // Silent failure for git config
         }
       }
-      
+
       // Generate and output deactivation script
-      const deactivationScript = EnvironmentManager.generateDeactivationScript(profile || undefined);
+      const deactivationScript = EnvironmentManager.generateDeactivationScript(
+        profile || undefined
+      );
       console.log(deactivationScript);
-      
     } catch (err) {
       // Silent failure for hook operations
       process.exit(1);

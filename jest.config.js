@@ -6,6 +6,11 @@ module.exports = {
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
   ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '\\.d\\.ts$'
+  ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
@@ -16,7 +21,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@kontext/core$': '<rootDir>/packages/core/src',
     '^@kontext/cli$': '<rootDir>/packages/cli/src'
   },
