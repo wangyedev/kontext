@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { ProfileManager, DirectoryScanner } from '@kontext/core';
+import { ProfileManager, DirectoryScanner } from '../../../core/src';
 import { success, error, info, profile as profileFormat, header } from '../utils/prompt-utils';
 
 export const listCommand = new Command('list')

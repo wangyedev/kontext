@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
-import { ProfileManager, Profile, EnvironmentManager } from '@kontext/core';
+import { ProfileManager, Profile, EnvironmentManager } from '../../../core/src';
 import { success, error, warning, info, profile as profileFormat, header } from '../utils/prompt-utils';
 
 export const newCommand = new Command('new')

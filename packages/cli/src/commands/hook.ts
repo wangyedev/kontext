@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { DirectoryScanner, ProfileManager, GitConfigManager, EnvironmentManager } from '@kontext/core';
+import { DirectoryScanner, ProfileManager, GitConfigManager, EnvironmentManager } from '../../../core/src';
 import { detectShell } from '../utils/shell-detection';
 
 export const hookCommand = new Command('hook')

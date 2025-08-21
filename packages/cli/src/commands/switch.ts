@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { ProfileManager, GitConfigManager, EnvironmentManager } from '@kontext/core';
+import { ProfileManager, GitConfigManager, EnvironmentManager } from '../../../core/src';
 import { success, error, warning, profile as profileFormat } from '../utils/prompt-utils';
 
 export const switchCommand = new Command('switch')

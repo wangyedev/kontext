@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { GitConfigManager } from '@kontext/core';
+import { GitConfigManager } from '../../../core/src';
 import { detectShell, generateHookCommand } from '../utils/shell-detection';
 import { success, error, warning, info, header, command, divider } from '../utils/prompt-utils';
 

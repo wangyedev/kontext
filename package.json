@@ -1,5 +1,5 @@
 {
-  "name": "kontext",
+  "name": "kontext-cli",
   "version": "1.0.0",
   "description": "A CLI tool for managing development profiles and automating shell environment switching",
   "main": "dist/cli/src/index.js",
@@ -17,11 +17,42 @@
     "clean": "rm -rf dist && rm -rf packages/*/dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "pnpm run build && pkg dist/cli/src/index.js --out-path ./build --targets node18-macos-x64,node18-linux-x64,node18-win-x64",
+    "prepublishOnly": "pnpm run clean && pnpm run build",
+    "prepack": "pnpm run build",
     "install-deps": "pnpm install"
   },
-  "keywords": ["cli", "development", "profile", "git", "environment"],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "cli",
+    "development",
+    "profile",
+    "git",
+    "environment",
+    "shell",
+    "configuration",
+    "monorepo",
+    "workspace"
+  ],
+  "author": "wangyeux@gmail.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wangyedev/kontext"
+  },
+  "homepage": "https://github.com/wangyedev/kontext#readme",
+  "bugs": {
+    "url": "https://github.com/wangyedev/kontext/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/js-yaml": "^4.0.0",
@@ -29,7 +60,8 @@
     "pkg": "^5.8.1",
     "nodemon": "^3.0.0",
     "concurrently": "^8.0.0",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
     "commander": "^11.0.0",
