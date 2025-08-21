@@ -8,8 +8,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    reviewers:
-      - "wangyedev"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
@@ -26,8 +24,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "wangyedev"
     commit-message:
       prefix: "deps(core)"
       include: "scope"
@@ -44,8 +40,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "wangyedev"
     commit-message:
       prefix: "deps(cli)"
       include: "scope"
@@ -62,8 +56,6 @@ updates:
       day: "monday"
       time: "10:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "wangyedev"
     commit-message:
       prefix: "ci"
       include: "scope"
