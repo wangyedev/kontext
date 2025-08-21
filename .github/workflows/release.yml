@@ -1,0 +1,217 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.0)'
+        required: true
+        type: string
+
+jobs:
+  validate-release:
+    name: Validate release
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/v}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Releasing version: $VERSION"
+        
+    - name: Validate version format
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+          echo "Invalid version format: $VERSION"
+          exit 1
+        fi
+        
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'pnpm'
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Run tests
+      run: pnpm run test
+      
+    - name: Build project
+      run: pnpm run build
+      
+  publish-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'pnpm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Update package version
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        npm version $VERSION --no-git-tag-version
+        
+    - name: Build for production
+      run: pnpm run build
+      
+    - name: Publish to NPM
+      run: pnpm publish --access public --no-git-checks
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, publish-npm]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'pnpm'
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Build project
+      run: pnpm run build
+      
+    - name: Generate changelog
+      id: changelog
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        
+        # Get the previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [[ -n "$PREV_TAG" ]]; then
+          CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+        else
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+        fi
+        
+        # Save changelog to file
+        cat > CHANGELOG_TEMP.md << EOF
+        ## Changes in v$VERSION
+        
+        $CHANGELOG
+        
+        ## Installation
+        
+        \`\`\`bash
+        npm install -g kontext-cli@$VERSION
+        \`\`\`
+        
+        ## What's Changed
+        
+        This release includes improvements to the Kontext CLI tool for managing development profiles and automating shell environment switching.
+        
+        **Full Changelog**: https://github.com/wangyedev/kontext/compare/$PREV_TAG...v$VERSION
+        EOF
+        
+        echo "changelog_file=CHANGELOG_TEMP.md" >> $GITHUB_OUTPUT
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.validate-release.outputs.version }}
+        name: Release v${{ needs.validate-release.outputs.version }}
+        body_path: ${{ steps.changelog.outputs.changelog_file }}
+        draft: false
+        prerelease: ${{ contains(needs.validate-release.outputs.version, '-') }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+  post-release:
+    name: Post-release tasks
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release]
+    if: always() && needs.create-github-release.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create post-release issue
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const version = '${{ needs.validate-release.outputs.version }}';
+          const issueBody = `
+          ## Release v${version} completed successfully! 🎉
+          
+          ### Actions completed:
+          - ✅ NPM package published
+          - ✅ GitHub release created
+          - ✅ Changelog generated
+          
+          ### Next steps:
+          - [ ] Update documentation if needed
+          - [ ] Announce the release
+          - [ ] Monitor for any issues
+          
+          ### Links:
+          - NPM: https://www.npmjs.com/package/kontext-cli/v/${version}
+          - Release: https://github.com/wangyedev/kontext/releases/tag/v${version}
+          `;
+          
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Post-release tasks for v${version}`,
+            body: issueBody,
+            labels: ['release', 'maintenance']
+          });

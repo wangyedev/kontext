@@ -1,0 +1,208 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance benchmarks weekly on Sundays at 2:00 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  performance-test:
+    name: Performance benchmarks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'pnpm'
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Build project
+      run: pnpm run build
+      
+    - name: CLI startup time benchmark
+      id: startup-benchmark
+      run: |
+        echo "Testing CLI startup performance..."
+        
+        # Test CLI startup time (average of 10 runs)
+        total_time=0
+        runs=10
+        
+        for i in $(seq 1 $runs); do
+          start_time=$(date +%s%N)
+          node dist/cli/src/index.js --help > /dev/null 2>&1
+          end_time=$(date +%s%N)
+          
+          duration=$((end_time - start_time))
+          total_time=$((total_time + duration))
+        done
+        
+        avg_time=$((total_time / runs))
+        avg_ms=$((avg_time / 1000000))
+        
+        echo "CLI startup time: ${avg_ms}ms (average of $runs runs)"
+        echo "startup_time_ms=${avg_ms}" >> $GITHUB_OUTPUT
+        
+        # Set benchmark threshold (500ms)
+        if [ $avg_ms -gt 500 ]; then
+          echo "⚠️ CLI startup time (${avg_ms}ms) exceeds threshold (500ms)"
+          echo "startup_slow=true" >> $GITHUB_OUTPUT
+        else
+          echo "✅ CLI startup time within acceptable range"
+          echo "startup_slow=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Memory usage benchmark
+      id: memory-benchmark
+      run: |
+        echo "Testing CLI memory usage..."
+        
+        # Test memory usage for common commands
+        commands=("--help" "list" "show work || true")
+        
+        for cmd in "${commands[@]}"; do
+          echo "Testing: kontext $cmd"
+          
+          # Use /usr/bin/time to measure memory usage
+          memory_kb=$(timeout 30s /usr/bin/time -f "%M" node dist/cli/src/index.js $cmd 2>&1 | tail -1)
+          memory_mb=$((memory_kb / 1024))
+          
+          echo "  Memory usage: ${memory_mb}MB"
+          
+          # Check if memory usage is reasonable (< 100MB)
+          if [ $memory_mb -gt 100 ]; then
+            echo "⚠️ High memory usage detected: ${memory_mb}MB"
+          fi
+        done
+        
+    - name: Package size check
+      id: package-size
+      run: |
+        echo "Checking package size..."
+        
+        # Pack the package and check size
+        pnpm pack --quiet
+        package_file=$(ls kontext-cli-*.tgz)
+        package_size=$(stat -c%s "$package_file")
+        package_size_mb=$((package_size / 1024 / 1024))
+        
+        echo "Package size: ${package_size_mb}MB"
+        echo "package_size_mb=${package_size_mb}" >> $GITHUB_OUTPUT
+        
+        # Check if package size is reasonable (< 10MB)
+        if [ $package_size_mb -gt 10 ]; then
+          echo "⚠️ Package size (${package_size_mb}MB) is quite large"
+          echo "package_large=true" >> $GITHUB_OUTPUT
+        else
+          echo "✅ Package size within reasonable limits"
+          echo "package_large=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Clean up
+        rm "$package_file"
+        
+    - name: Bundle analysis
+      run: |
+        echo "Analyzing build output..."
+        
+        # Check dist directory size
+        dist_size=$(du -sh dist | cut -f1)
+        echo "Build output size: $dist_size"
+        
+        # List largest files in dist
+        echo "Largest files in build output:"
+        find dist -type f -exec ls -lh {} \; | sort -k5 -hr | head -10
+        
+    - name: Performance report
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const startupTime = '${{ steps.startup-benchmark.outputs.startup_time_ms }}';
+          const startupSlow = '${{ steps.startup-benchmark.outputs.startup_slow }}' === 'true';
+          const packageSize = '${{ steps.package-size.outputs.package_size_mb }}';
+          const packageLarge = '${{ steps.package-size.outputs.package_large }}' === 'true';
+          
+          const warningIcon = '⚠️';
+          const successIcon = '✅';
+          
+          const reportBody = `
+          ## Performance Report
+          
+          ### CLI Startup Performance
+          ${startupSlow ? warningIcon : successIcon} **Startup Time**: ${startupTime}ms
+          ${startupSlow ? '> Threshold: 500ms' : '< Threshold: 500ms'}
+          
+          ### Package Metrics
+          ${packageLarge ? warningIcon : successIcon} **Package Size**: ${packageSize}MB
+          ${packageLarge ? '> Recommended: 10MB' : '< Recommended: 10MB'}
+          
+          ### Performance Thresholds
+          - CLI startup time should be < 500ms
+          - Package size should be < 10MB
+          - Memory usage should be < 100MB per command
+          
+          ${startupSlow || packageLarge ? '### ⚠️ Performance Issues Detected\n\nSome performance metrics are outside recommended thresholds. Consider optimization.' : '### ✅ All Performance Metrics Passed\n\nNo performance issues detected.'}
+          
+          ---
+          *Report generated on ${new Date().toISOString()}*
+          `;
+          
+          // For PRs, add comment with performance report
+          if (context.eventName === 'pull_request') {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reportBody
+            });
+          }
+          
+          // Always log the report
+          console.log(reportBody);
+          
+    - name: Performance regression check
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "Checking for performance regressions..."
+        
+        startup_time="${{ steps.startup-benchmark.outputs.startup_time_ms }}"
+        package_size="${{ steps.package-size.outputs.package_size_mb }}"
+        
+        # Set exit code based on performance thresholds
+        exit_code=0
+        
+        if [ "${{ steps.startup-benchmark.outputs.startup_slow }}" = "true" ]; then
+          echo "❌ CLI startup time regression detected"
+          exit_code=1
+        fi
+        
+        if [ "${{ steps.package-size.outputs.package_large }}" = "true" ]; then
+          echo "❌ Package size regression detected"
+          exit_code=1
+        fi
+        
+        if [ $exit_code -eq 0 ]; then
+          echo "✅ No performance regressions detected"
+        fi
+        
+        exit $exit_code

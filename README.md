@@ -53,6 +53,7 @@ echo "work" > .kontext-profile
 ### 3. Automatic activation
 
 Now whenever you `cd` into that directory (or any subdirectory), Kontext will automatically:
+
 - Switch to the "work" profile
 - Update your Git configuration
 - Set environment variables
@@ -62,25 +63,30 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 ## Commands
 
 ### Profile Management
+
 - `kontext new [profile]` - Create a new profile interactively
 - `kontext list [--detailed]` - List all available profiles
 - `kontext show <profile>` - Display detailed profile configuration
 - `kontext edit <profile>` - Edit a profile in your default editor
 
 ### Profile Activation
+
 - `kontext current [--detailed] [--edit]` - Show the currently active profile
 - `kontext switch <profile>` - Manually switch to a profile
 
 ### Setup & Configuration
+
 - `kontext init` - Set up shell integration
 - `kontext config` - Show configuration information and helpful commands
 
 ### Advanced
+
 - `kontext hook init` - Generate shell integration script (used internally)
 
 ## Configuration Management
 
 ### Profile Files
+
 Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Each profile can configure:
 
 - **Git Identity**: Automatically set `user.name` and `user.email`
@@ -105,17 +111,20 @@ environment:
 ### Managing Configurations
 
 **View profile details:**
+
 ```bash
 kontext show work
 ```
 
 **Edit a profile:**
+
 ```bash
 kontext edit work          # Opens in your default editor
 kontext current --edit     # Edit currently active profile
 ```
 
 **Find configuration files:**
+
 ```bash
 kontext config             # Shows all configuration locations
 ```
@@ -133,6 +142,7 @@ kontext current
 ```
 
 **Pro Tips:**
+
 - Subdirectories inherit parent directory profiles
 - Use `kontext list --detailed` to see all profile configurations
 - Environment variables are only active when the profile is loaded via shell integration
@@ -161,4 +171,4 @@ This creates single executables for macOS, Linux, and Windows in the `build/` di
 
 ## License
 
-ISC
+MIT
