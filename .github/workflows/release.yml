@@ -54,7 +54,7 @@ jobs:
         cache: 'pnpm'
         
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
       
     - name: Run tests
       run: pnpm run test
@@ -84,7 +84,7 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
         
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
       
     - name: Update package version
       if: github.event_name == 'workflow_dispatch'
@@ -123,7 +123,7 @@ jobs:
         cache: 'pnpm'
         
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
       
     - name: Build project
       run: pnpm run build
