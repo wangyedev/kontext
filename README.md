@@ -62,6 +62,16 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 - Source any profile-specific shell scripts
 - Update your shell prompt to show the active profile
 
+### 4. Manual switching (optional)
+
+You can also manually switch profiles for the current session:
+```bash
+kontext switch personal
+# Profile "personal" activated
+```
+
+Manual switches are temporary and only affect the current shell session. When you open a new terminal, the automatic directory-based rules apply.
+
 ## Commands
 
 ### Profile Management (`kontext profile`)
@@ -77,7 +87,7 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 
 ### Profile Status & Activation
 - `kontext status [profile]` - Show detailed profile status and system state
-- `kontext switch <profile>` - Manually switch to a profile
+- `kontext switch <profile>` - Manually switch to a profile (temporary, session-only)
 
 ### Setup & Configuration
 - `kontext init` - Set up shell integration
@@ -124,7 +134,7 @@ kontext status work
 
 **Edit a profile:**
 ```bash
-kontext edit work          # Opens in your default editor
+kontext profile edit work  # Opens in your default editor
 kontext status             # View currently active profile
 ```
 
@@ -175,6 +185,8 @@ kontext tag rm
 - Subdirectories inherit parent directory profiles
 - Use `kontext status` to see detailed profile information and system state
 - Environment variables are only active when the profile is loaded via shell integration
+- Manual profile switches with `kontext switch` are temporary and session-specific
+- Default profiles can be set in your home directory (`~/.kontext-profile`) for non-project folders
 
 ## Hooks
 
