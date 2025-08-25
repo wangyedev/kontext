@@ -343,8 +343,8 @@ export const newCommand = new Command('new')
         console.log('');
       }
       console.log(info('🛠️  Useful Commands:'));
-      console.log(`   kontext show ${profileName}     # View your new profile`);
-      console.log(`   kontext edit ${profileName}     # Edit the profile configuration`);
+      console.log(`   kontext profile show ${profileName}     # View your new profile`);
+      console.log(`   kontext profile edit ${profileName}     # Edit the profile configuration`);
       console.log(`   kontext switch ${profileName}   # Test the profile manually`);
       console.log('');
       console.log(info('📂 Set Up Directory Association:'));

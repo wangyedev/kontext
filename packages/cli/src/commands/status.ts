@@ -49,7 +49,7 @@ export const statusCommand = new Command('status')
           console.log('Available profiles:');
           const profiles = await profileManager.listProfiles();
           if (profiles.length === 0) {
-            console.log('  None found. Create one with: kontext new');
+            console.log('  None found. Create one with: kontext profile new');
           } else {
             profiles.forEach(name => console.log(`  ${profileFormat(name)}`));
           }
@@ -229,13 +229,13 @@ export const statusCommand = new Command('status')
         console.log('');
         console.log('💡 Available Actions:');
         if (isActive) {
-          console.log(`   kontext edit ${profileName}     # Edit this profile`);
+          console.log(`   kontext profile edit ${profileName}     # Edit this profile`);
           console.log(`   kontext switch <profile>     # Switch to another profile`);
         } else {
           console.log(`   kontext switch ${profileName}   # Activate this profile`);
-          console.log(`   kontext edit ${profileName}     # Edit this profile`);
+          console.log(`   kontext profile edit ${profileName}     # Edit this profile`);
         }
-        console.log('   kontext list                 # View all profiles');
+        console.log('   kontext profile list         # View all profiles');
       }
 
     } catch (err) {

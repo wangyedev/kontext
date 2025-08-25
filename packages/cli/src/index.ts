@@ -17,7 +17,11 @@ program
   .description(
     "A CLI tool for managing development profiles and automating shell environment switching"
   )
-  .version("1.5.0");
+  .version("1.5.0")
+  .option("-v", "output the version number", () => {
+    console.log(program.version());
+    process.exit(0);
+  });
 
 // Add command groups
 program.addCommand(profileCommand);

@@ -47,10 +47,10 @@ export const configCommand = new Command('config')
       // Common commands
       console.log(info('Common Commands:'));
       console.log('  Profile Management:');
-      console.log(`    ${command('kontext list')}              # List all profiles`);
-      console.log(`    ${command('kontext new <name>')}        # Create a new profile`);
-      console.log(`    ${command('kontext show <name>')}       # View profile details`);
-      console.log(`    ${command('kontext edit <name>')}       # Edit profile in editor`);
+      console.log(`    ${command('kontext profile list')}      # List all profiles`);
+      console.log(`    ${command('kontext profile new <name>')}  # Create a new profile`);
+      console.log(`    ${command('kontext profile show <name>')} # View profile details`);
+      console.log(`    ${command('kontext profile edit <name>')} # Edit profile in editor`);
       console.log('');
       
       console.log('  Directory Setup:');

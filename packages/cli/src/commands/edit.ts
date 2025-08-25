@@ -71,7 +71,7 @@ export const editCommand = new Command('edit')
         console.log(success(`Profile ${profileFormat(profileName)} updated!`));
         console.log('');
         console.log('💡 Pro tip: Use these commands after editing:');
-        console.log(`   kontext show ${profileName}     # View the updated configuration`);
+        console.log(`   kontext profile show ${profileName}     # View the updated configuration`);
         console.log(`   kontext switch ${profileName}   # Test the updated profile`);
         console.log('');
         console.log('📁 Profile directory contents:');

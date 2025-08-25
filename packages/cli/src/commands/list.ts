@@ -12,7 +12,7 @@ export const listCommand = new Command('list')
       
       if (profiles.length === 0) {
         console.log(info('No profiles found.'));
-        console.log('Create your first profile with: kontext new');
+        console.log('Create your first profile with: kontext profile new');
         return;
       }
       

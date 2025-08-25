@@ -45,7 +45,7 @@ export const deleteCommand = new Command('delete')
         console.log('');
         console.log('Available commands:');
         console.log(`  kontext switch <other-profile>  # Switch to another profile`);
-        console.log(`  kontext list                    # View all available profiles`);
+        console.log(`  kontext profile list           # View all available profiles`);
         process.exit(1);
       }
       
@@ -91,8 +91,8 @@ export const deleteCommand = new Command('delete')
       console.log(success(`Profile ${profileFormat(profileName)} has been deleted successfully!`));
       console.log('');
       console.log('💡 Next steps:');
-      console.log('  kontext list              # View remaining profiles');
-      console.log('  kontext new               # Create a new profile');
+      console.log('  kontext profile list     # View remaining profiles');
+      console.log('  kontext profile new      # Create a new profile');
       
     } catch (err) {
       console.error(error(`Failed to delete profile: ${err instanceof Error ? err.message : 'Unknown error'}`));

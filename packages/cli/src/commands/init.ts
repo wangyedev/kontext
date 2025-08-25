@@ -55,7 +55,7 @@ export const initCommand = new Command('init')
       console.log('Next steps:');
       console.log('1. Run the shell configuration command above');
       console.log('2. Restart your shell or source your config file');
-      console.log('3. Create your first profile with:', command('kontext new'));
+      console.log('3. Create your first profile with:', command('kontext profile new'));
       console.log('4. Navigate to a project directory and create a .kontext-profile file');
       console.log('');
       
