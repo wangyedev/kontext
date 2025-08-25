@@ -3,14 +3,12 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { initCommand } from "./commands/init";
-import { newCommand } from "./commands/new";
-import { listCommand } from "./commands/list";
 import { switchCommand } from "./commands/switch";
 import { hookCommand } from "./commands/hook";
-import { editCommand } from "./commands/edit";
 import { configCommand } from "./commands/config";
-import { deleteCommand } from "./commands/delete";
 import { statusCommand } from "./commands/status";
+import { profileCommand } from "./commands/profile";
+import { tagCommand } from "./commands/tag";
 
 const program = new Command();
 
@@ -19,15 +17,15 @@ program
   .description(
     "A CLI tool for managing development profiles and automating shell environment switching"
   )
-  .version("1.4.0");
+  .version("1.5.0");
 
-// Add commands
+// Add command groups
+program.addCommand(profileCommand);
+program.addCommand(tagCommand);
+
+// Add core commands
 program.addCommand(initCommand);
-program.addCommand(newCommand);
-program.addCommand(listCommand);
 program.addCommand(statusCommand);
-program.addCommand(editCommand);
-program.addCommand(deleteCommand);
 program.addCommand(switchCommand);
 program.addCommand(configCommand);
 program.addCommand(hookCommand);

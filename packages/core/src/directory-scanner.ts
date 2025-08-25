@@ -126,6 +126,55 @@ export class DirectoryScanner {
     }
   }
 
+  /**
+   * Recursively finds all .kontext-profile files starting from a given directory
+   */
+  static async findAllProfileFiles(startDir: string = process.env.HOME || process.cwd()): Promise<Array<{ path: string; profileName: string; directory: string }>> {
+    const results: Array<{ path: string; profileName: string; directory: string }> = [];
+    
+    async function searchDirectory(dir: string): Promise<void> {
+      try {
+        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          
+          if (entry.isFile() && entry.name === DirectoryScanner.PROFILE_FILE_NAME) {
+            try {
+              const profileName = await DirectoryScanner.readProfileName(fullPath);
+              results.push({
+                path: fullPath,
+                profileName,
+                directory: dir
+              });
+            } catch {
+              // Skip invalid profile files
+            }
+          } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+            // Recursively search subdirectories, but skip hidden dirs and node_modules
+            await searchDirectory(fullPath);
+          }
+        }
+      } catch {
+        // Skip directories we can't read
+      }
+    }
+    
+    await searchDirectory(startDir);
+    return results;
+  }
+
+  /**
+   * Validates that a profile exists in the profile manager
+   */
+  static async validateProfileExists(profileName: string, profileManager: any): Promise<boolean> {
+    try {
+      return await profileManager.profileExists(profileName);
+    } catch {
+      return false;
+    }
+  }
+
   private static async fileExists(filePath: string): Promise<boolean> {
     try {
       await fs.promises.access(filePath, fs.constants.F_OK);

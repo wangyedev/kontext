@@ -15,6 +15,7 @@ Kontext allows developers to define and switch between distinct development prof
 - **Shell Script Integration**: Source custom shell scripts for profile-specific configurations
 - **Hooks**: Execute custom scripts on profile activation and deactivation
 - **Cross-shell Support**: Works with Bash, Zsh, and Fish shells
+- **Modern Command Structure**: Intuitive `profile` and `tag` command groups for organized management
 
 ## Installation
 
@@ -37,18 +38,18 @@ Follow the instructions to add the shell hook to your configuration file, then r
 ### 1. Create your first profile
 
 ```bash
-kontext new work
+kontext profile new work
 ```
 
 Follow the interactive prompts to configure your work profile with Git configuration, dotfiles, and environment variables.
 
 ### 2. Associate a directory with a profile
 
-Navigate to your work project directory and create a profile marker:
+Navigate to your work project directory and tag it:
 
 ```bash
 cd ~/work/my-project
-echo "work" > .kontext-profile
+kontext tag work
 ```
 
 ### 3. Automatic activation
@@ -63,15 +64,19 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 
 ## Commands
 
-### Profile Management
-- `kontext new [profile]` - Create a new profile interactively
-- `kontext list [--detailed]` - List all available profiles
-- `kontext status [profile]` - Show detailed profile status and system state
-- `kontext edit <profile>` - Edit a profile in your default editor
-- `kontext delete <profile>` - Delete a profile and its files
+### Profile Management (`kontext profile`)
+- `kontext profile new [name]` - Create a new profile interactively
+- `kontext profile list [--detailed]` - List all available profiles
+- `kontext profile edit <name>` - Edit a profile in your default editor
+- `kontext profile delete <name>` - Delete a profile and its files
 
-### Profile Activation
-- `kontext status` - Show the currently active profile with live system validation
+### Directory Tagging (`kontext tag`)
+- `kontext tag <profile>` - Apply a profile to the current directory
+- `kontext tag remove` (or `rm`) - Remove profile association from current directory
+- `kontext tag list [--interactive]` - List and manage all profile tags across filesystem
+
+### Profile Status & Activation
+- `kontext status [profile]` - Show detailed profile status and system state
 - `kontext switch <profile>` - Manually switch to a profile
 
 ### Setup & Configuration
@@ -131,14 +136,39 @@ kontext status             # Shows active profile with file paths
 
 ### Directory Association
 
-Create a `.kontext-profile` file in any directory to automatically activate a profile:
+#### Method 1: Using the Tag Command (Recommended)
+```bash
+# Navigate to your project directory
+cd ~/work/my-project
 
+# Tag the directory with a profile
+kontext tag work
+
+# Test it works
+kontext status
+```
+
+#### Method 2: Manual File Creation
 ```bash
 # In your project directory
 echo "work" > .kontext-profile
 
 # Test it works
 kontext status
+```
+
+#### Managing Tags
+```bash
+# List all profile tags across your filesystem
+kontext tag list
+
+# Interactive tag management dashboard
+kontext tag list --interactive
+
+# Remove a tag from current directory
+kontext tag remove
+# or use the short alias
+kontext tag rm
 ```
 
 **Pro Tips:**
