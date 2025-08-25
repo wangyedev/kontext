@@ -20,7 +20,7 @@ program
   .description(
     "A CLI tool for managing development profiles and automating shell environment switching"
   )
-  .version("1.2.0");
+  .version("1.3.0");
 
 // Add commands
 program.addCommand(initCommand);

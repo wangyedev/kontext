@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-08-25
+
+### Added
+- **Profile Deletion**: New `delete` command for removing profiles
+  - `kontext delete <profile>` command with alias `kontext remove <profile>`
+  - Interactive confirmation prompt to prevent accidental deletion
+  - Safety check prevents deletion of currently active profiles
+  - Profile validation with helpful error messages
+  - Shows profile details before deletion for confirmation
+  - Graceful error handling and user guidance
+
+### Enhanced
+- Updated command help to include delete/remove commands
+- Improved user experience with clear feedback and next steps
+
 ## [1.2.0] - 2024-08-21
 
 ### Added
