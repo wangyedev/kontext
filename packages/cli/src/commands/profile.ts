@@ -176,6 +176,28 @@ const newProfileCommand = new Command('new')
       
       console.log('');
       console.log(success(`Profile "${profileName}" created successfully!`));
+      
+      // Check if this should be set as the default profile
+      const homeDir = process.env.HOME;
+      if (homeDir && !(await DirectoryScanner.hasProfileFile(homeDir))) {
+        console.log('');
+        const defaultAnswer = await inquirer.prompt([{
+          type: 'confirm',
+          name: 'setDefault',
+          message: `Would you like to set '${profileName}' as your default profile for all non-project folders? (This will create a .kontext-profile file in your home directory)`,
+          default: true
+        }]);
+        
+        if (defaultAnswer.setDefault) {
+          try {
+            await DirectoryScanner.createProfileFile(homeDir, profileName);
+            console.log(success(`✅ Set '${profileName}' as the default profile.`));
+          } catch (err) {
+            console.log(warning(`Could not set default profile: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          }
+        }
+      }
+      
       console.log('');
       console.log(info('✅ Next step: Apply it to a project by running:'));
       console.log(`   cd /path/to/project && kontext tag ${profileName}`);
