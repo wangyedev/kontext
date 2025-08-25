@@ -57,8 +57,9 @@ export const deleteCommand = new Command('delete')
         const profile = await profileManager.getProfile(profileName);
         if (profile) {
           console.log(info('Profile configuration:'));
-          if (profile.git?.userName || profile.git?.userEmail) {
-            console.log(`  Git: ${profile.git.userName || 'Not set'} <${profile.git.userEmail || 'Not set'}>`);
+          if (profile.git?.configPath) {
+            const configFile = profile.git.configPath.replace('${KONTEXT_PROFILE_DIR}/', '');
+            console.log(`  Git: ${configFile}`);
           }
           if (profile.environment?.variables) {
             const varCount = Object.keys(profile.environment.variables).length;

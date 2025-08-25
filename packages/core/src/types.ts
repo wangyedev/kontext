@@ -1,13 +1,13 @@
 export interface Profile {
   name: string;
   git?: {
-    userName?: string;
-    userEmail?: string;
+    configPath?: string;
   };
   environment?: {
     variables?: Record<string, string>;
     scriptPath?: string;
   };
+  dotfiles?: Record<string, string>;
   hooks?: {
     onActivate?: string;
     onDeactivate?: string;
@@ -17,13 +17,13 @@ export interface Profile {
 export interface ProfileConfig {
   name: string;
   git?: {
-    user_name?: string;
-    user_email?: string;
+    config_path?: string;
   };
   environment?: {
     variables?: Record<string, string>;
     script_path?: string;
   };
+  dotfiles?: Record<string, string>;
   hooks?: {
     on_activate?: string;
     on_deactivate?: string;

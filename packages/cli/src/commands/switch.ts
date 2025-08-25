@@ -35,7 +35,8 @@ export const switchCommand = new Command('switch')
       }
       
       // Generate environment activation script
-      const activationScript = EnvironmentManager.generateActivationScript(profile);
+      const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
+      const activationScript = EnvironmentManager.generateActivationScript(profile, profileDir);
       
       // For manual switching, we need to output shell commands that can be sourced
       // This is a limitation of CLI tools - they can't directly modify the parent shell

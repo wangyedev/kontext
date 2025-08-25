@@ -59,10 +59,10 @@ export const currentCommand = new Command('current')
           const profile = await profileManager.getProfile(activeProfile!);
           
           if (profile) {
-            if (profile.git?.userName || profile.git?.userEmail) {
+            if (profile.git?.configPath) {
               console.log('Git Configuration:');
-              console.log(`  User: ${profile.git.userName || 'Not set'}`);
-              console.log(`  Email: ${profile.git.userEmail || 'Not set'}`);
+              const configFile = profile.git.configPath.replace('${KONTEXT_PROFILE_DIR}/', '');
+              console.log(`  Config file: ${configFile}`);
               console.log('');
             }
             

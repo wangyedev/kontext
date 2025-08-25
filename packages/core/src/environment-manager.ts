@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { Profile } from './types';
 import { HookManager } from './hook-manager';
+import { ConfigFileManager } from './config-file-manager';
 
 export class EnvironmentManager {
   private static currentProfile: string | null = null;
@@ -10,8 +11,19 @@ export class EnvironmentManager {
   /**
    * Applies environment configuration from a profile
    */
-  static async applyProfile(profile: Profile): Promise<string[]> {
+  static async applyProfile(profile: Profile, profileDir: string): Promise<string[]> {
     const commands: string[] = [];
+    
+    // Apply dotfiles first
+    if (profile.dotfiles) {
+      await ConfigFileManager.applyDotfiles(profileDir, profile.dotfiles);
+    }
+    
+    // Configure git if needed
+    if (profile.git?.configPath) {
+      const resolvedConfigPath = ConfigFileManager.resolveProfilePath(profileDir, profile.git.configPath);
+      await ConfigFileManager.configureGit(profile.name, resolvedConfigPath);
+    }
     
     // Apply environment variables
     if (profile.environment?.variables) {
@@ -22,7 +34,7 @@ export class EnvironmentManager {
     
     // Source shell script if specified
     if (profile.environment?.scriptPath) {
-      const scriptPath = this.resolveScriptPath(profile.environment.scriptPath);
+      const scriptPath = this.resolveScriptPath(profile.environment.scriptPath, profileDir);
       
       if (await this.fileExists(scriptPath)) {
         commands.push(`source "${scriptPath}"`);
@@ -34,6 +46,7 @@ export class EnvironmentManager {
     // Set current profile tracking
     this.currentProfile = profile.name;
     commands.push(`export KONTEXT_CURRENT_PROFILE="${profile.name}"`);
+    commands.push(`export KONTEXT_PROFILE_DIR="${profileDir}"`);
     
     return commands;
   }
@@ -41,11 +54,22 @@ export class EnvironmentManager {
   /**
    * Clears current environment profile
    */
-  static clearProfile(): string[] {
+  static async clearProfile(profile?: Profile): Promise<string[]> {
     const commands: string[] = [];
+    
+    // Remove dotfiles
+    if (profile?.dotfiles) {
+      await ConfigFileManager.removeDotfiles(profile.dotfiles);
+    }
+    
+    // Remove git configuration
+    if (profile?.name) {
+      await ConfigFileManager.removeGitConfig(profile.name);
+    }
     
     // Unset profile tracking
     commands.push('unset KONTEXT_CURRENT_PROFILE');
+    commands.push('unset KONTEXT_PROFILE_DIR');
     this.currentProfile = null;
     
     return commands;
@@ -61,16 +85,21 @@ export class EnvironmentManager {
   /**
    * Generates shell script content for profile activation
    */
-  static generateActivationScript(profile: Profile): string {
+  static generateActivationScript(profile: Profile, profileDir: string): string {
     const commands = [
       '#!/bin/bash',
       `# Kontext profile activation script for: ${profile.name}`,
       '',
     ];
     
+    // Set profile directory first
+    commands.push('# Set profile directory');
+    commands.push(`export KONTEXT_PROFILE_DIR="${profileDir}"`);
+    commands.push('');
+    
     // Execute activation hook first
     if (profile.hooks?.onActivate) {
-      const hookPath = HookManager.resolveHookPath(profile.hooks.onActivate);
+      const hookPath = ConfigFileManager.resolveProfilePath(profileDir, profile.hooks.onActivate);
       commands.push('# Execute activation hook');
       commands.push(`if [ -f "${hookPath}" ]; then`);
       commands.push(`  export KONTEXT_PROFILE="${profile.name}"`);
@@ -93,7 +122,7 @@ export class EnvironmentManager {
     
     // Add script sourcing
     if (profile.environment?.scriptPath) {
-      const scriptPath = this.resolveScriptPath(profile.environment.scriptPath);
+      const scriptPath = this.resolveScriptPath(profile.environment.scriptPath, profileDir);
       commands.push('# Source profile script');
       commands.push(`if [ -f "${scriptPath}" ]; then`);
       commands.push(`  source "${scriptPath}"`);
@@ -113,7 +142,7 @@ export class EnvironmentManager {
   /**
    * Generates shell script content for profile deactivation
    */
-  static generateDeactivationScript(profile?: Profile): string {
+  static generateDeactivationScript(profile?: Profile, profileDir?: string): string {
     const commands = [
       '#!/bin/bash',
       '# Kontext profile deactivation script',
@@ -132,10 +161,11 @@ export class EnvironmentManager {
     // Unset profile tracking
     commands.push('# Clear current profile');
     commands.push('unset KONTEXT_CURRENT_PROFILE');
+    commands.push('unset KONTEXT_PROFILE_DIR');
     
     // Execute deactivation hook last
-    if (profile?.hooks?.onDeactivate) {
-      const hookPath = HookManager.resolveHookPath(profile.hooks.onDeactivate);
+    if (profile?.hooks?.onDeactivate && profileDir) {
+      const hookPath = ConfigFileManager.resolveProfilePath(profileDir, profile.hooks.onDeactivate);
       commands.push('');
       commands.push('# Execute deactivation hook');
       commands.push(`if [ -f "${hookPath}" ]; then`);
@@ -210,7 +240,12 @@ export class EnvironmentManager {
   /**
    * Resolves a script path, handling relative paths and tilde expansion
    */
-  private static resolveScriptPath(scriptPath: string): string {
+  private static resolveScriptPath(scriptPath: string, profileDir?: string): string {
+    // Handle ${KONTEXT_PROFILE_DIR} variables
+    if (profileDir && scriptPath.includes('${KONTEXT_PROFILE_DIR}')) {
+      return ConfigFileManager.resolveProfilePath(profileDir, scriptPath);
+    }
+    
     if (scriptPath.startsWith('~/')) {
       return path.join(os.homedir(), scriptPath.slice(2));
     }
@@ -219,7 +254,10 @@ export class EnvironmentManager {
       return scriptPath;
     }
     
-    // For relative paths, resolve from the profiles directory
+    // For relative paths, resolve from current directory or profile directory
+    if (profileDir) {
+      return path.resolve(profileDir, scriptPath);
+    }
     return path.resolve(scriptPath);
   }
 

@@ -20,15 +20,31 @@ export const editCommand = new Command('edit')
         process.exit(1);
       }
       
-      const profilePath = `${profileManager.getProfilesPath()}/${profileName}.yml`;
+      const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
+      const profilePath = `${profileDir}/profile.yml`;
       
       if (!fs.existsSync(profilePath)) {
-        console.log(error(`Profile file not found: ${profilePath}`));
+        console.log(error(`Profile manifest not found: ${profilePath}`));
         process.exit(1);
       }
       
       console.log(info(`Opening ${profileFormat(profileName)} profile for editing...`));
-      console.log(`File: ${path(profilePath)}`);
+      console.log(`Directory: ${path(profileDir)}/`);
+      console.log(`Manifest: ${path(profilePath)}`);
+      console.log('');
+      console.log('💡 You can also edit individual files in the profile directory:');
+      
+      try {
+        const profile = await profileManager.getProfile(profileName);
+        if (profile?.dotfiles) {
+          for (const [, source] of Object.entries(profile.dotfiles)) {
+            const fileName = source.replace('${KONTEXT_PROFILE_DIR}/', '');
+            console.log(`   ${fileName}`);
+          }
+        }
+      } catch {
+        // Ignore errors loading profile details for file listing
+      }
       console.log('');
       
       // Determine the best editor to use
@@ -39,8 +55,8 @@ export const editCommand = new Command('edit')
       if (!editor) {
         console.log(error('No editor found. Please set the EDITOR environment variable or install a default editor.'));
         console.log('');
-        console.log('You can edit the file manually at:');
-        console.log(path(profilePath));
+        console.log('You can edit files manually in the profile directory:');
+        console.log(path(profileDir));
         process.exit(1);
       }
       
@@ -57,12 +73,20 @@ export const editCommand = new Command('edit')
         console.log('💡 Pro tip: Use these commands after editing:');
         console.log(`   kontext show ${profileName}     # View the updated configuration`);
         console.log(`   kontext switch ${profileName}   # Test the updated profile`);
+        console.log('');
+        console.log('📁 Profile directory contents:');
+        try {
+          const files = await fs.promises.readdir(profileDir);
+          files.forEach(file => console.log(`   ${file}`));
+        } catch {
+          // Ignore errors reading directory
+        }
         
       } catch (err) {
         console.log(error(`Failed to open editor: ${err instanceof Error ? err.message : 'Unknown error'}`));
         console.log('');
-        console.log('You can edit the file manually at:');
-        console.log(path(profilePath));
+        console.log('You can edit files manually in the profile directory:');
+        console.log(path(profileDir));
       }
       
     } catch (err) {

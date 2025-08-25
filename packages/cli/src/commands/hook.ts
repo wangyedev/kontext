@@ -210,7 +210,8 @@ hookCommand
       }
       
       // Generate and output activation script
-      const activationScript = EnvironmentManager.generateActivationScript(profile);
+      const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
+      const activationScript = EnvironmentManager.generateActivationScript(profile, profileDir);
       console.log(activationScript);
       
     } catch (err) {

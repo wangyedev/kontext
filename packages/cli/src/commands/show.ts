@@ -24,20 +24,16 @@ export const showCommand = new Command('show')
         process.exit(1);
       }
       
-      const profilePath = `${profileManager.getProfilesPath()}/${profileName}.yml`;
+      const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
       
       console.log(header(`Profile: ${profileFormat(profile.name)}`));
       console.log('');
       
       // Git Configuration
-      if (profile.git?.userName || profile.git?.userEmail) {
+      if (profile.git?.configPath) {
         console.log(info('Git Configuration:'));
-        if (profile.git.userName) {
-          console.log(`  Name: ${profile.git.userName}`);
-        }
-        if (profile.git.userEmail) {
-          console.log(`  Email: ${profile.git.userEmail}`);
-        }
+        const configFile = profile.git.configPath.replace('${KONTEXT_PROFILE_DIR}/', '');
+        console.log(`  Config file: ${configFile}`);
         console.log('');
       }
       
@@ -46,6 +42,16 @@ export const showCommand = new Command('show')
         console.log(info('Environment Variables:'));
         for (const [key, value] of Object.entries(profile.environment.variables)) {
           console.log(`  ${key}=${value}`);
+        }
+        console.log('');
+      }
+      
+      // Dotfiles
+      if (profile.dotfiles && Object.keys(profile.dotfiles).length > 0) {
+        console.log(info('Configuration Files:'));
+        for (const [target, source] of Object.entries(profile.dotfiles)) {
+          const fileName = source.replace('${KONTEXT_PROFILE_DIR}/', '');
+          console.log(`  ${target} → ${fileName}`);
         }
         console.log('');
       }
@@ -70,13 +76,18 @@ export const showCommand = new Command('show')
       }
       
       // Show empty sections
-      if (!profile.git?.userName && !profile.git?.userEmail) {
+      if (!profile.git?.configPath) {
         console.log(info('Git Configuration: Not configured'));
         console.log('');
       }
       
       if (!profile.environment?.variables || Object.keys(profile.environment.variables).length === 0) {
         console.log(info('Environment Variables: None'));
+        console.log('');
+      }
+      
+      if (!profile.dotfiles || Object.keys(profile.dotfiles).length === 0) {
+        console.log(info('Configuration Files: None'));
         console.log('');
       }
       
@@ -92,12 +103,13 @@ export const showCommand = new Command('show')
       
       console.log(divider());
       console.log('');
-      console.log(info('Configuration File Location:'));
-      console.log(`  ${path(profilePath)}`);
+      console.log(info('Profile Directory:'));
+      console.log(`  ${path(profileDir)}/`);
       console.log('');
       console.log(info('Available Actions:'));
       console.log(`  kontext edit ${profileName}     # Edit this profile`);
       console.log(`  kontext switch ${profileName}   # Activate this profile`);
+      console.log(`  kontext delete ${profileName}   # Delete this profile`);
       console.log(`  kontext list --detailed         # View all profiles`);
       
     } catch (err) {

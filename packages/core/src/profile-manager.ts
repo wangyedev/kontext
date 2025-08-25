@@ -18,8 +18,12 @@ export class ProfileManager {
     }
   }
 
-  private getProfileFilePath(profileName: string): string {
-    return path.join(this.profilesPath, `${profileName}.yml`);
+  private getProfileDirectoryPath(profileName: string): string {
+    return path.join(this.profilesPath, profileName);
+  }
+
+  private getProfileManifestPath(profileName: string): string {
+    return path.join(this.getProfileDirectoryPath(profileName), 'profile.yml');
   }
 
   private validateProfileConfig(config: any): ProfileConfig {
@@ -38,13 +42,13 @@ export class ProfileManager {
     return {
       name: config.name,
       git: config.git ? {
-        userName: config.git.user_name,
-        userEmail: config.git.user_email,
+        configPath: config.git.config_path,
       } : undefined,
       environment: config.environment ? {
         variables: config.environment.variables,
         scriptPath: config.environment.script_path,
       } : undefined,
+      dotfiles: config.dotfiles,
       hooks: config.hooks ? {
         onActivate: config.hooks.on_activate,
         onDeactivate: config.hooks.on_deactivate,
@@ -56,13 +60,13 @@ export class ProfileManager {
     return {
       name: profile.name,
       git: profile.git ? {
-        user_name: profile.git.userName,
-        user_email: profile.git.userEmail,
+        config_path: profile.git.configPath,
       } : undefined,
       environment: profile.environment ? {
         variables: profile.environment.variables,
         script_path: profile.environment.scriptPath,
       } : undefined,
+      dotfiles: profile.dotfiles,
       hooks: profile.hooks ? {
         on_activate: profile.hooks.onActivate,
         on_deactivate: profile.hooks.onDeactivate,
@@ -71,11 +75,15 @@ export class ProfileManager {
   }
 
   async createProfile(profile: Profile): Promise<void> {
-    const filePath = this.getProfileFilePath(profile.name);
+    const profileDir = this.getProfileDirectoryPath(profile.name);
+    const manifestPath = this.getProfileManifestPath(profile.name);
     
-    if (fs.existsSync(filePath)) {
+    if (fs.existsSync(profileDir)) {
       throw new Error(`Profile "${profile.name}" already exists`);
     }
+
+    // Create profile directory
+    await fs.promises.mkdir(profileDir, { recursive: true });
 
     const config = this.convertProfileToConfig(profile);
     const yamlContent = yaml.dump(config, { 
@@ -84,18 +92,18 @@ export class ProfileManager {
       noRefs: true 
     });
 
-    await fs.promises.writeFile(filePath, yamlContent, 'utf8');
+    await fs.promises.writeFile(manifestPath, yamlContent, 'utf8');
   }
 
   async getProfile(profileName: string): Promise<Profile | null> {
-    const filePath = this.getProfileFilePath(profileName);
+    const manifestPath = this.getProfileManifestPath(profileName);
     
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(manifestPath)) {
       return null;
     }
 
     try {
-      const content = await fs.promises.readFile(filePath, 'utf8');
+      const content = await fs.promises.readFile(manifestPath, 'utf8');
       const config = yaml.load(content) as any;
       const validatedConfig = this.validateProfileConfig(config);
       return this.convertConfigToProfile(validatedConfig);
@@ -105,9 +113,9 @@ export class ProfileManager {
   }
 
   async updateProfile(profile: Profile): Promise<void> {
-    const filePath = this.getProfileFilePath(profile.name);
+    const manifestPath = this.getProfileManifestPath(profile.name);
     
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(manifestPath)) {
       throw new Error(`Profile "${profile.name}" does not exist`);
     }
 
@@ -118,17 +126,17 @@ export class ProfileManager {
       noRefs: true 
     });
 
-    await fs.promises.writeFile(filePath, yamlContent, 'utf8');
+    await fs.promises.writeFile(manifestPath, yamlContent, 'utf8');
   }
 
   async deleteProfile(profileName: string): Promise<void> {
-    const filePath = this.getProfileFilePath(profileName);
+    const profileDir = this.getProfileDirectoryPath(profileName);
     
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(profileDir)) {
       throw new Error(`Profile "${profileName}" does not exist`);
     }
 
-    await fs.promises.unlink(filePath);
+    await fs.promises.rm(profileDir, { recursive: true, force: true });
   }
 
   async listProfiles(): Promise<string[]> {
@@ -136,15 +144,24 @@ export class ProfileManager {
       return [];
     }
 
-    const files = await fs.promises.readdir(this.profilesPath);
-    return files
-      .filter(file => file.endsWith('.yml') || file.endsWith('.yaml'))
-      .map(file => path.basename(file, path.extname(file)));
+    const items = await fs.promises.readdir(this.profilesPath, { withFileTypes: true });
+    const profiles: string[] = [];
+    
+    for (const item of items) {
+      if (item.isDirectory()) {
+        const manifestPath = this.getProfileManifestPath(item.name);
+        if (fs.existsSync(manifestPath)) {
+          profiles.push(item.name);
+        }
+      }
+    }
+    
+    return profiles;
   }
 
   async profileExists(profileName: string): Promise<boolean> {
-    const filePath = this.getProfileFilePath(profileName);
-    return fs.existsSync(filePath);
+    const manifestPath = this.getProfileManifestPath(profileName);
+    return fs.existsSync(manifestPath);
   }
 
   getProfilesPath(): string {

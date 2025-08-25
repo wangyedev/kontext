@@ -1,5 +1,7 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ProfileManager, Profile, EnvironmentManager, HookManager } from '../../../core/src';
 import { success, error, warning, info, profile as profileFormat, header } from '../utils/prompt-utils';
 
@@ -74,13 +76,39 @@ export const newCommand = new Command('new')
         }
       ]);
       
+      // Dotfiles configuration
+      console.log('');
+      console.log(info('Configuration Files (optional)'));
+      console.log('Select which configuration files you\'d like to manage with this profile:');
+      const dotfileAnswers = await inquirer.prompt([
+        {
+          type: 'checkbox',
+          name: 'selectedDotfiles',
+          message: 'Select configuration files to create:',
+          choices: [
+            { name: '.npmrc (NPM configuration)', value: 'npmrc' },
+            { name: '.gitconfig (Git configuration)', value: 'gitconfig', checked: gitAnswers.setupGit },
+            { name: '.env (Environment variables)', value: 'env' },
+            { name: '.yarnrc.yml (Yarn configuration)', value: 'yarnrc' },
+            { name: 'Custom file', value: 'custom' }
+          ]
+        },
+        {
+          type: 'input',
+          name: 'customFile',
+          message: 'Enter custom file name (e.g., .eslintrc.json):',
+          when: (answers) => answers.selectedDotfiles.includes('custom'),
+          validate: (input: string) => input.trim() ? true : 'Custom file name cannot be empty'
+        }
+      ]);
+      
       // Environment variables
       console.log('');
       console.log(info('Environment Variables (optional)'));
       const envAnswers = await inquirer.prompt([{
         type: 'confirm',
         name: 'setupEnv',
-        message: 'Would you like to add environment variables?',
+        message: 'Would you like to add environment variables to the profile manifest?',
         default: false
       }]);
       
@@ -203,17 +231,40 @@ export const newCommand = new Command('new')
         }
       }
       
+      // Prepare dotfiles mapping
+      let dotfiles: Record<string, string> = {};
+      const selectedDotfiles = dotfileAnswers.selectedDotfiles || [];
+      
+      // Always include .gitconfig if git is configured
+      if (gitAnswers.setupGit) {
+        dotfiles['~/.gitconfig'] = '${KONTEXT_PROFILE_DIR}/.gitconfig';
+      }
+      
+      if (selectedDotfiles.includes('npmrc')) {
+        dotfiles['~/.npmrc'] = '${KONTEXT_PROFILE_DIR}/.npmrc';
+      }
+      if (selectedDotfiles.includes('env')) {
+        dotfiles['~/.env'] = '${KONTEXT_PROFILE_DIR}/.env';
+      }
+      if (selectedDotfiles.includes('yarnrc')) {
+        dotfiles['~/.yarnrc.yml'] = '${KONTEXT_PROFILE_DIR}/.yarnrc.yml';
+      }
+      if (selectedDotfiles.includes('custom') && dotfileAnswers.customFile) {
+        const customFile = dotfileAnswers.customFile.trim();
+        dotfiles[`~/${customFile}`] = `\${KONTEXT_PROFILE_DIR}/${customFile}`;
+      }
+      
       // Create profile object
       const profile: Profile = {
         name: profileName,
         git: gitAnswers.setupGit ? {
-          userName: gitAnswers.userName,
-          userEmail: gitAnswers.userEmail
+          configPath: '${KONTEXT_PROFILE_DIR}/.gitconfig'
         } : undefined,
         environment: (Object.keys(environmentVariables).length > 0 || scriptAnswers.setupScript) ? {
           variables: Object.keys(environmentVariables).length > 0 ? environmentVariables : undefined,
           scriptPath: scriptAnswers.setupScript ? scriptAnswers.scriptPath : undefined
         } : undefined,
+        dotfiles: Object.keys(dotfiles).length > 0 ? dotfiles : undefined,
         hooks: hooksAnswers.setupHooks && (hooksAnswers.activateHook?.trim() || hooksAnswers.deactivateHook?.trim()) ? {
           onActivate: hooksAnswers.activateHook?.trim() || undefined,
           onDeactivate: hooksAnswers.deactivateHook?.trim() || undefined
@@ -234,14 +285,18 @@ export const newCommand = new Command('new')
       console.log('');
       console.log(header('Profile Summary'));
       console.log(`Name: ${profileFormat(profile.name)}`);
-      if (profile.git) {
-        console.log(`Git user: ${profile.git.userName} <${profile.git.userEmail}>`);
+      if (profile.git?.configPath) {
+        const configFile = profile.git.configPath.replace('${KONTEXT_PROFILE_DIR}/', '');
+        console.log(`Git config: ${configFile}`);
       }
       if (profile.environment?.variables && Object.keys(profile.environment.variables).length > 0) {
         console.log(`Environment variables: ${Object.keys(profile.environment.variables).length}`);
       }
       if (profile.environment?.scriptPath) {
         console.log(`Shell script: ${profile.environment.scriptPath}`);
+      }
+      if (profile.dotfiles && Object.keys(profile.dotfiles).length > 0) {
+        console.log(`Configuration files: ${Object.keys(profile.dotfiles).length}`);
       }
       if (profile.hooks?.onActivate) {
         console.log(`Activation hook: ${profile.hooks.onActivate}`);
@@ -267,14 +322,26 @@ export const newCommand = new Command('new')
       // Create the profile
       await profileManager.createProfile(profile);
       
+      // Create dotfiles with default content
+      const profileDir = path.join(profileManager.getProfilesPath(), profileName);
+      await createDotfiles(profileDir, selectedDotfiles, gitAnswers, dotfileAnswers);
+      
       console.log('');
       console.log(success(`Profile "${profileName}" created successfully!`));
       console.log('');
       console.log(header('What\'s Next?'));
       console.log('');
       console.log(info('📁 Profile Location:'));
-      console.log(`   ${profileManager.getProfilesPath()}/${profileName}.yml`);
+      console.log(`   ${profileDir}/`);
       console.log('');
+      if (Object.keys(dotfiles).length > 0) {
+        console.log(info('📄 Configuration Files Created:'));
+        Object.keys(dotfiles).forEach(target => {
+          const fileName = path.basename(dotfiles[target].replace('${KONTEXT_PROFILE_DIR}/', ''));
+          console.log(`   ${fileName}`);
+        });
+        console.log('');
+      }
       console.log(info('🛠️  Useful Commands:'));
       console.log(`   kontext show ${profileName}     # View your new profile`);
       console.log(`   kontext edit ${profileName}     # Edit the profile configuration`);
@@ -292,7 +359,8 @@ export const newCommand = new Command('new')
       console.log('');
       console.log(info('💡 Pro Tips:'));
       console.log('   • The profile activates automatically when you cd into the directory');
-      console.log('   • Subdirectories inherit the parent\'s profile');
+      console.log('   • Configuration files are symlinked when the profile is active');
+      console.log('   • Edit dotfiles directly in the profile directory');
       console.log('   • Use kontext config for more help and examples');
       
     } catch (err) {
@@ -300,3 +368,41 @@ export const newCommand = new Command('new')
       process.exit(1);
     }
   });
+
+// Helper function to create dotfiles with default content
+async function createDotfiles(
+  profileDir: string, 
+  selectedDotfiles: string[], 
+  gitAnswers: any, 
+  dotfileAnswers: any
+): Promise<void> {
+  try {
+    if (selectedDotfiles.includes('npmrc')) {
+      const npmrcContent = `# NPM Configuration for profile\n# Example:\n# registry=https://npm.example.com/\n# //npm.example.com/:_authToken=your-token\n`;
+      await fs.promises.writeFile(path.join(profileDir, '.npmrc'), npmrcContent, 'utf8');
+    }
+    
+    if (gitAnswers.setupGit) {
+      const gitConfigContent = `[user]\n\tname = ${gitAnswers.userName}\n\temail = ${gitAnswers.userEmail}\n\n# Add your git aliases and configuration here\n# [alias]\n#\tst = status\n#\tco = checkout\n`;
+      await fs.promises.writeFile(path.join(profileDir, '.gitconfig'), gitConfigContent, 'utf8');
+    }
+    
+    if (selectedDotfiles.includes('env')) {
+      const envContent = `# Environment variables for this profile\n# Example:\n# NODE_ENV=development\n# API_URL=https://api.example.com\n`;
+      await fs.promises.writeFile(path.join(profileDir, '.env'), envContent, 'utf8');
+    }
+    
+    if (selectedDotfiles.includes('yarnrc')) {
+      const yarnrcContent = `# Yarn configuration\nyarnPath: .yarn/releases/yarn-stable.cjs\nnodeLinker: node-modules\n\n# Example:\n# npmRegistryServer: https://npm.example.com/\n`;
+      await fs.promises.writeFile(path.join(profileDir, '.yarnrc.yml'), yarnrcContent, 'utf8');
+    }
+    
+    if (selectedDotfiles.includes('custom') && dotfileAnswers.customFile) {
+      const customFile = dotfileAnswers.customFile.trim();
+      const customContent = `# Custom configuration file: ${customFile}\n# Add your configuration here\n`;
+      await fs.promises.writeFile(path.join(profileDir, customFile), customContent, 'utf8');
+    }
+  } catch (err) {
+    console.warn(warning(`Warning: Failed to create some dotfiles: ${err instanceof Error ? err.message : 'Unknown error'}`));
+  }
+}

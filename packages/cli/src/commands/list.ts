@@ -35,10 +35,9 @@ export const listCommand = new Command('list')
             
             console.log(`${marker}${formattedName}`);
             
-            if (profile.git?.userName || profile.git?.userEmail) {
-              const gitUser = profile.git.userName || 'Not set';
-              const gitEmail = profile.git.userEmail || 'Not set';
-              console.log(`    Git: ${gitUser} <${gitEmail}>`);
+            if (profile.git?.configPath) {
+              const configFile = profile.git.configPath.replace('${KONTEXT_PROFILE_DIR}/', '');
+              console.log(`    Git: ${configFile}`);
             }
             
             if (profile.environment?.variables) {
