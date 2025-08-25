@@ -40,7 +40,7 @@ Follow the instructions to add the shell hook to your configuration file, then r
 kontext new work
 ```
 
-Follow the interactive prompts to configure your work profile with Git identity and environment variables.
+Follow the interactive prompts to configure your work profile with Git configuration, dotfiles, and environment variables.
 
 ### 2. Associate a directory with a profile
 
@@ -66,11 +66,12 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 ### Profile Management
 - `kontext new [profile]` - Create a new profile interactively
 - `kontext list [--detailed]` - List all available profiles
-- `kontext show <profile>` - Display detailed profile configuration
+- `kontext status [profile]` - Show detailed profile status and system state
 - `kontext edit <profile>` - Edit a profile in your default editor
+- `kontext delete <profile>` - Delete a profile and its files
 
 ### Profile Activation
-- `kontext current [--detailed] [--edit]` - Show the currently active profile
+- `kontext status` - Show the currently active profile with live system validation
 - `kontext switch <profile>` - Manually switch to a profile
 
 ### Setup & Configuration
@@ -83,11 +84,11 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 ## Configuration Management
 
 ### Profile Files
-Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Each profile can configure:
+Profiles are stored as folders in `~/.config/kontext/profiles/`, each containing a `profile.yml` file and associated configuration files. Each profile can configure:
 
-- **Git Identity**: Automatically set `user.name` and `user.email`
+- **Git Configuration**: Use a dedicated `.gitconfig` file for the profile
 - **Environment Variables**: Export custom environment variables
-- **Shell Scripts**: Source additional shell configuration
+- **Dotfile Management**: Automatically symlink dotfiles like `.vimrc`, `.tmux.conf`, etc.
 - **Hooks**: Execute custom scripts on activation and deactivation
 
 ### Example Profile Configuration
@@ -95,35 +96,37 @@ Profiles are stored as YAML files in `~/.config/kontext/profiles/`. Each profile
 ```yaml
 name: work
 git:
-  user_name: John Doe
-  user_email: john.doe@company.com
+  config_path: ${KONTEXT_PROFILE_DIR}/.gitconfig
 environment:
   variables:
     NODE_ENV: development
     API_URL: https://api.company.com
     AWS_PROFILE: work
-  script_path: ~/.config/kontext/scripts/work.sh
+dotfiles:
+  ~/.vimrc: ${KONTEXT_PROFILE_DIR}/.vimrc
+  ~/.tmux.conf: ${KONTEXT_PROFILE_DIR}/.tmux.conf
 hooks:
-  on_activate: ~/.config/kontext/hooks/work-activate.sh
-  on_deactivate: ~/.config/kontext/hooks/work-deactivate.sh
+  on_activate: ${KONTEXT_PROFILE_DIR}/activate.sh
+  on_deactivate: ${KONTEXT_PROFILE_DIR}/deactivate.sh
 ```
 
 ### Managing Configurations
 
 **View profile details:**
 ```bash
-kontext show work
+kontext status work
 ```
 
 **Edit a profile:**
 ```bash
 kontext edit work          # Opens in your default editor
-kontext current --edit     # Edit currently active profile
+kontext status             # View currently active profile
 ```
 
 **Find configuration files:**
 ```bash
 kontext config             # Shows all configuration locations
+kontext status             # Shows active profile with file paths
 ```
 
 ### Directory Association
@@ -135,12 +138,12 @@ Create a `.kontext-profile` file in any directory to automatically activate a pr
 echo "work" > .kontext-profile
 
 # Test it works
-kontext current
+kontext status
 ```
 
 **Pro Tips:**
 - Subdirectories inherit parent directory profiles
-- Use `kontext list --detailed` to see all profile configurations
+- Use `kontext status` to see detailed profile information and system state
 - Environment variables are only active when the profile is loaded via shell integration
 
 ## Hooks
