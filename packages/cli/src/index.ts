@@ -11,6 +11,7 @@ import { hookCommand } from "./commands/hook";
 import { editCommand } from "./commands/edit";
 import { showCommand } from "./commands/show";
 import { configCommand } from "./commands/config";
+import { deleteCommand } from "./commands/delete";
 
 const program = new Command();
 
@@ -27,6 +28,7 @@ program.addCommand(newCommand);
 program.addCommand(listCommand);
 program.addCommand(showCommand);
 program.addCommand(editCommand);
+program.addCommand(deleteCommand);
 program.addCommand(switchCommand);
 program.addCommand(currentCommand);
 program.addCommand(configCommand);
