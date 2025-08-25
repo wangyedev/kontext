@@ -24,6 +24,23 @@ function generateHookScript(shellType: 'bash' | 'zsh' | 'fish' | 'unknown'): str
 __kontext_last_dir=""
 __kontext_current_profile=""
 
+# Kontext command wrapper for seamless switch functionality
+kontext() {
+  if [[ "$1" == "switch" ]]; then
+    local script_output
+    script_output=$(command kontext "$@")
+    if [[ $? -eq 0 ]]; then
+      eval "$script_output"
+      echo "# Profile \\"$2\\" activated"
+    else
+      echo "$script_output" >&2
+      return 1
+    fi
+  else
+    command kontext "$@"
+  fi
+}
+
 __kontext_check_directory() {
   local current_dir="$(pwd)"
   
@@ -109,6 +126,23 @@ fi
     case 'fish':
       return `
 # Fish shell integration
+
+# Kontext command wrapper for seamless switch functionality  
+function kontext
+    if test "$argv[1]" = "switch"
+        set -l script_output (command kontext $argv)
+        if test $status -eq 0
+            eval "$script_output"
+            echo "# Profile \\"$argv[2]\\" activated"
+        else
+            echo "$script_output" >&2
+            return 1
+        end
+    else
+        command kontext $argv
+    end
+end
+
 function __kontext_check_directory --on-variable PWD
     set -l current_dir (pwd)
     

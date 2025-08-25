@@ -38,15 +38,8 @@ export const switchCommand = new Command('switch')
       const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
       const activationScript = EnvironmentManager.generateActivationScript(profile, profileDir);
       
-      // For manual switching, we need to output shell commands that can be sourced
-      // This is a limitation of CLI tools - they can't directly modify the parent shell
-      console.log('# Run the following commands to switch to this profile:');
-      console.log('# (or source this output directly)');
-      console.log('');
+      // Output the activation script for shell function to execute
       console.log(activationScript);
-      
-      console.log('');
-      console.log(`# Profile "${profileName}" activated`);
       
     } catch (err) {
       console.error(error(`Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`));
