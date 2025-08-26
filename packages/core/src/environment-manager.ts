@@ -7,12 +7,14 @@ import { ConfigFileManager } from './config-file-manager';
 
 export class EnvironmentManager {
   private static currentProfile: string | null = null;
+  private static envFileVariables: Map<string, string[]> = new Map();
 
   /**
    * Applies environment configuration from a profile
    */
   static async applyProfile(profile: Profile, profileDir: string): Promise<string[]> {
     const commands: string[] = [];
+    const envVariables: string[] = [];
     
     // Apply dotfiles first
     if (profile.dotfiles) {
@@ -25,11 +27,34 @@ export class EnvironmentManager {
       await ConfigFileManager.configureGit(profile.name, resolvedConfigPath);
     }
     
-    // Apply environment variables
+    // Load .env file variables first
+    if (profile.environment?.envFile) {
+      const envFilePath = ConfigFileManager.resolveProfilePath(profileDir, profile.environment.envFile);
+      
+      if (await this.fileExists(envFilePath)) {
+        const envFileVars = await this.parseEnvFile(envFilePath);
+        for (const [key, value] of Object.entries(envFileVars)) {
+          commands.push(`export ${key}="${value}"`);
+          envVariables.push(key);
+        }
+      } else {
+        console.warn(`Warning: Environment file not found: ${envFilePath}`);
+      }
+    }
+    
+    // Apply environment variables (can override .env file variables)
     if (profile.environment?.variables) {
       for (const [key, value] of Object.entries(profile.environment.variables)) {
         commands.push(`export ${key}="${value}"`);
+        if (!envVariables.includes(key)) {
+          envVariables.push(key);
+        }
       }
+    }
+    
+    // Store env variables for cleanup
+    if (envVariables.length > 0) {
+      this.envFileVariables.set(profile.name, envVariables);
     }
     
     // Source shell script if specified
@@ -65,6 +90,17 @@ export class EnvironmentManager {
     // Remove git configuration
     if (profile?.name) {
       await ConfigFileManager.removeGitConfig(profile.name);
+    }
+    
+    // Unset environment variables from .env file and profile config
+    if (profile?.name) {
+      const storedVars = this.envFileVariables.get(profile.name);
+      if (storedVars) {
+        for (const key of storedVars) {
+          commands.push(`unset ${key}`);
+        }
+        this.envFileVariables.delete(profile.name);
+      }
     }
     
     // Unset profile tracking
@@ -111,7 +147,26 @@ export class EnvironmentManager {
       commands.push('');
     }
     
-    // Add environment variables
+    // Add .env file variables first
+    if (profile.environment?.envFile) {
+      const envFilePath = ConfigFileManager.resolveProfilePath(profileDir, profile.environment.envFile);
+      commands.push('# Load .env file variables');
+      commands.push(`if [ -f "${envFilePath}" ]; then`);
+      commands.push(`  while IFS='=' read -r key value; do`);
+      commands.push(`    # Skip empty lines and comments`);
+      commands.push(`    [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue`);
+      commands.push(`    # Remove quotes if present`);
+      commands.push(`    value=\${value#\\"}; value=\${value%\\"}`);
+      commands.push(`    value=\${value#\\'}; value=\${value%\\'}`);
+      commands.push(`    export "$key"="$value"`);
+      commands.push(`  done < "${envFilePath}"`);
+      commands.push('else');
+      commands.push(`  echo "Warning: Environment file not found: ${envFilePath}" >&2`);
+      commands.push('fi');
+      commands.push('');
+    }
+    
+    // Add environment variables (can override .env file variables)
     if (profile.environment?.variables) {
       commands.push('# Environment variables');
       for (const [key, value] of Object.entries(profile.environment.variables)) {
@@ -149,6 +204,20 @@ export class EnvironmentManager {
       '',
     ];
     
+    // Unset .env file variables first
+    if (profile?.environment?.envFile && profileDir) {
+      const envFilePath = ConfigFileManager.resolveProfilePath(profileDir, profile.environment.envFile);
+      commands.push('# Unset .env file variables');
+      commands.push(`if [ -f "${envFilePath}" ]; then`);
+      commands.push(`  while IFS='=' read -r key value; do`);
+      commands.push(`    # Skip empty lines and comments`);
+      commands.push(`    [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue`);
+      commands.push(`    unset "$key"`);
+      commands.push(`  done < "${envFilePath}"`);
+      commands.push('fi');
+      commands.push('');
+    }
+    
     // Unset environment variables if we know what they are
     if (profile?.environment?.variables) {
       commands.push('# Unset environment variables');
@@ -185,7 +254,7 @@ export class EnvironmentManager {
    */
   static async createTempScript(content: string): Promise<string> {
     const tempDir = os.tmpdir();
-    const scriptPath = path.join(tempDir, `kontext-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sh`);
+    const scriptPath = path.join(tempDir, `kontext-${Date.now()}-${Math.random().toString(36).substring(2, 11)}.sh`);
     
     await fs.promises.writeFile(scriptPath, content, { mode: 0o755 });
     
@@ -274,6 +343,72 @@ export class EnvironmentManager {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Parses a .env file and returns key-value pairs
+   */
+  private static async parseEnvFile(filePath: string): Promise<Record<string, string>> {
+    const variables: Record<string, string> = {};
+    
+    try {
+      const content = await fs.promises.readFile(filePath, 'utf-8');
+      const lines = content.split('\n');
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        // Skip empty lines and comments
+        if (!trimmedLine || trimmedLine.startsWith('#')) {
+          continue;
+        }
+        
+        // Parse KEY=value format
+        const equalIndex = trimmedLine.indexOf('=');
+        if (equalIndex === -1) {
+          continue; // Skip lines without =
+        }
+        
+        const key = trimmedLine.substring(0, equalIndex).trim();
+        let value = trimmedLine.substring(equalIndex + 1).trim();
+        
+        // Remove quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        
+        if (key) {
+          variables[key] = value;
+        }
+      }
+    } catch (error) {
+      throw new Error(`Failed to parse .env file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    return variables;
+  }
+
+  /**
+   * Validates that an .env file path is within the profile directory and exists
+   */
+  static async validateEnvFile(envFile: string, profileDir: string): Promise<void> {
+    const resolvedPath = ConfigFileManager.resolveProfilePath(profileDir, envFile);
+    
+    // Validate path is within profile directory
+    ConfigFileManager.validateProfilePath(profileDir, envFile);
+    
+    // Check if file exists
+    if (!(await this.fileExists(resolvedPath))) {
+      throw new Error(`Environment file not found: ${resolvedPath}`);
+    }
+    
+    // Check if file is readable
+    try {
+      await fs.promises.access(resolvedPath, fs.constants.R_OK);
+    } catch {
+      throw new Error(`Environment file is not readable: ${resolvedPath}`);
     }
   }
 }

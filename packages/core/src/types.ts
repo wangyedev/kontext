@@ -6,6 +6,7 @@ export interface Profile {
   environment?: {
     variables?: Record<string, string>;
     scriptPath?: string;
+    envFile?: string;
   };
   dotfiles?: Record<string, string>;
   hooks?: {
@@ -22,6 +23,7 @@ export interface ProfileConfig {
   environment?: {
     variables?: Record<string, string>;
     script_path?: string;
+    env_file?: string;
   };
   dotfiles?: Record<string, string>;
   hooks?: {

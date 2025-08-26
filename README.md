@@ -6,12 +6,19 @@ A CLI tool for managing development profiles and automating shell environment sw
 
 Kontext allows developers to define and switch between distinct development profiles, automating the management of their shell environment and Git configurations. It provides seamless, directory-based context switching to eliminate the manual, error-prone process of juggling configurations between different projects.
 
+## Demo
+
+![Kontext Demo](assets/demo.gif)
+
+_See Kontext in action: automatic environment switching_
+
 ## Features
 
 - **Profile Management**: Define profiles in YAML files with Git identity and environment configurations
 - **Directory-based Activation**: Automatically switch profiles when entering directories with `.kontext-profile` files
 - **Git Identity Management**: Automatically configure Git user name and email based on the active profile
 - **Environment Variables**: Set profile-specific environment variables
+- **.env File Support**: Load environment variables from .env files within profiles
 - **Shell Script Integration**: Source custom shell scripts for profile-specific configurations
 - **Hooks**: Execute custom scripts on profile activation and deactivation
 - **Cross-shell Support**: Works with Bash, Zsh, and Fish shells
@@ -59,6 +66,7 @@ kontext tag work
 ### 3. Automatic activation
 
 Now whenever you `cd` into that directory (or any subdirectory), Kontext will automatically:
+
 - Switch to the "work" profile
 - Execute activation hooks (if configured)
 - Update your Git configuration
@@ -69,6 +77,7 @@ Now whenever you `cd` into that directory (or any subdirectory), Kontext will au
 ### 4. Manual switching (optional)
 
 You can also manually switch profiles for the current session:
+
 ```bash
 kontext switch personal
 # Profile "personal" activated
@@ -79,34 +88,40 @@ Manual switches are temporary and only affect the current shell session. When yo
 ## Commands
 
 ### Profile Management (`kontext profile`)
+
 - `kontext profile new [name]` - Create a new profile interactively
 - `kontext profile list [--detailed]` - List all available profiles
 - `kontext profile edit <name>` - Edit a profile in your default editor
 - `kontext profile delete <name>` - Delete a profile and its files
 
 ### Directory Tagging (`kontext tag`)
+
 - `kontext tag <profile>` - Apply a profile to the current directory
 - `kontext tag remove` (or `rm`) - Remove profile association from current directory
 - `kontext tag list [--interactive]` - List and manage all profile tags across filesystem
 
 ### Profile Status & Activation
+
 - `kontext status [profile]` - Show detailed profile status and system state
 - `kontext switch <profile>` - Manually switch to a profile (temporary, session-only)
 
 ### Setup & Configuration
+
 - `kontext init` - Set up shell integration
 - `kontext config` - Show configuration information and helpful commands
 
 ### Advanced
+
 - `kontext hook init` - Generate shell integration script (used internally)
 
 ## Configuration Management
 
 ### Profile Files
+
 Profiles are stored as folders in `~/.config/kontext/profiles/`, each containing a `profile.yml` file and associated configuration files. Each profile can configure:
 
 - **Git Configuration**: Use a dedicated `.gitconfig` file for the profile
-- **Environment Variables**: Export custom environment variables
+- **Environment Variables**: Export custom environment variables or load from .env files
 - **Dotfile Management**: Automatically symlink dotfiles like `.vimrc`, `.tmux.conf`, etc.
 - **Hooks**: Execute custom scripts on activation and deactivation
 
@@ -117,10 +132,15 @@ name: work
 git:
   config_path: ${KONTEXT_PROFILE_DIR}/.gitconfig
 environment:
+  # Load variables from .env file (optional)
+  env_file: ${KONTEXT_PROFILE_DIR}/.env
+  # Direct variables (can override .env file variables)
   variables:
     NODE_ENV: development
     API_URL: https://api.company.com
     AWS_PROFILE: work
+  # Source shell script for complex setup (optional)
+  script_path: ${KONTEXT_PROFILE_DIR}/setup.sh
 dotfiles:
   ~/.vimrc: ${KONTEXT_PROFILE_DIR}/.vimrc
   ~/.tmux.conf: ${KONTEXT_PROFILE_DIR}/.tmux.conf
@@ -129,20 +149,59 @@ hooks:
   on_deactivate: ${KONTEXT_PROFILE_DIR}/hooks/deactivate.sh
 ```
 
+### Environment Configuration Options
+
+Kontext supports multiple ways to configure environment variables with different precedence levels:
+
+1. **.env File Variables** (lowest precedence): Load from a `.env` file within the profile directory
+2. **Direct Variables** (medium precedence): Define variables directly in the profile YAML
+3. **Shell Script Variables** (highest precedence): Set via custom shell script execution
+
+#### .env File Support
+
+You can specify a `.env` file to automatically load environment variables:
+
+```yaml
+environment:
+  env_file: ${KONTEXT_PROFILE_DIR}/.env
+```
+
+Create a `.env` file in your profile directory:
+
+```bash
+# ~/.config/kontext/profiles/work/.env
+NODE_ENV=development
+API_URL=https://api.company.com
+AWS_PROFILE=work
+DATABASE_URL=postgresql://localhost:5432/myapp
+
+# Comments are supported
+SECRET_KEY=your-secret-key-here
+```
+
+**Important Notes:**
+
+- The `.env` file must be located within the profile directory for security
+- Variables defined in the `variables` section can override `.env` file variables
+- Shell scripts executed via `script_path` can override both
+
 ### Managing Configurations
 
 **View profile details:**
+
 ```bash
 kontext status work
 ```
 
 **Edit a profile:**
+
 ```bash
 kontext profile edit work  # Opens in your default editor
 kontext status             # View currently active profile
 ```
 
 **Find configuration files:**
+
 ```bash
 kontext config             # Shows all configuration locations
 kontext status             # Shows active profile with file paths
@@ -151,6 +210,7 @@ kontext status             # Shows active profile with file paths
 ### Directory Association
 
 #### Method 1: Using the Tag Command (Recommended)
+
 ```bash
 # Navigate to your project directory
 cd ~/work/my-project
@@ -163,6 +223,7 @@ kontext status
 ```
 
 #### Method 2: Manual File Creation
+
 ```bash
 # In your project directory
 echo "work" > .kontext-profile
@@ -172,6 +233,7 @@ kontext status
 ```
 
 #### Managing Tags
+
 ```bash
 # List all profile tags across your filesystem
 kontext tag list
@@ -186,6 +248,7 @@ kontext tag rm
 ```
 
 **Pro Tips:**
+
 - Subdirectories inherit parent directory profiles
 - Use `kontext status` to see detailed profile information and system state
 - Environment variables are only active when the profile is loaded via shell integration
@@ -204,12 +267,14 @@ Hooks allow you to execute custom scripts when profiles are activated or deactiv
 ### Hook Environment Variables
 
 When hooks execute, they receive these environment variables:
+
 - `KONTEXT_PROFILE`: Name of the profile being activated/deactivated
 - `KONTEXT_HOOK_TYPE`: Either "activate" or "deactivate"
 
 ### Example Hook Scripts
 
 **Activation Hook** (`~/.config/kontext/profiles/work/hooks/activate.sh`):
+
 ```bash
 #!/bin/bash
 echo "🚀 Starting work session for $KONTEXT_PROFILE"
@@ -228,6 +293,7 @@ osascript -e 'display notification "Work environment activated" with title "Kont
 ```
 
 **Deactivation Hook** (`~/.config/kontext/profiles/work/hooks/deactivate.sh`):
+
 ```bash
 #!/bin/bash
 echo "🛑 Ending work session for $KONTEXT_PROFILE"
@@ -258,6 +324,7 @@ hooks:
 Hook scripts are stored in the `hooks/` directory within each profile folder alongside other configuration files. This ensures all profile-related assets are centrally located.
 
 Hooks also support:
+
 - Absolute paths (`/usr/local/bin/script.sh`)
 - Home directory expansion (`~/scripts/hook.sh`)
 - Relative paths (resolved from current directory)
