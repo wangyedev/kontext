@@ -1,24 +1,32 @@
-import { Command } from 'commander';
-import { DirectoryScanner, ProfileManager, GitConfigManager, EnvironmentManager } from '../../../core/src';
-import { detectShell } from '../utils/shell-detection';
+import { Command } from "commander";
+import {
+  DirectoryScanner,
+  ProfileManager,
+  GitConfigManager,
+  EnvironmentManager,
+} from "../../../core/src";
+import { detectShell } from "../utils/shell-detection";
 
-export const hookCommand = new Command('hook')
-  .description('Generate shell integration scripts');
+export const hookCommand = new Command("hook").description(
+  "Generate shell integration scripts"
+);
 
 hookCommand
-  .command('init')
-  .description('Generate shell initialization hook')
+  .command("init")
+  .description("Generate shell initialization hook")
   .action(() => {
     const shellInfo = detectShell();
-    
+
     // Generate shell-specific hook script
     const hookScript = generateHookScript(shellInfo.type);
-    
+
     // Output the script to stdout so it can be eval'd
     console.log(hookScript);
   });
 
-function generateHookScript(shellType: 'bash' | 'zsh' | 'fish' | 'unknown'): string {
+function generateHookScript(
+  shellType: "bash" | "zsh" | "fish" | "unknown"
+): string {
   const script = `
 # Kontext shell integration
 __kontext_last_dir=""
@@ -78,8 +86,10 @@ __kontext_prompt_info() {
 `;
 
   switch (shellType) {
-    case 'bash':
-      return script + `
+    case "bash":
+      return (
+        script +
+        `
 # Bash-specific integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
@@ -100,19 +110,25 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
 
-    case 'zsh':
-      return script + `
+    case "zsh":
+      return (
+        script +
+        `
 # Zsh-specific integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
+  
+  # Enable prompt substitution for function calls and hook into prompt
+  setopt PROMPT_SUBST
   
   # Use chpwd hook for directory changes
   autoload -U add-zsh-hook
   add-zsh-hook chpwd __kontext_check_directory
   
-  # Hook into prompt
+
   if [[ -z "$__kontext_original_ps1" ]]; then
     __kontext_original_ps1="$PS1"
     PS1='$(__kontext_prompt_info)'$PS1
@@ -121,9 +137,10 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
 
-    case 'fish':
+    case "fish":
       return `
 # Fish shell integration
 
@@ -187,7 +204,9 @@ end
 `;
 
     default:
-      return script + `
+      return (
+        script +
+        `
 # Generic shell integration
 if [[ -z "$__kontext_hooked" ]]; then
   __kontext_hooked=1
@@ -202,13 +221,14 @@ if [[ -z "$__kontext_hooked" ]]; then
   # Check on shell startup
   __kontext_check_directory
 fi
-`;
+`
+      );
   }
 }
 
 hookCommand
-  .command('get-profile')
-  .description('Get the active profile for the current directory')
+  .command("get-profile")
+  .description("Get the active profile for the current directory")
   .action(async () => {
     try {
       const activeProfile = await DirectoryScanner.getActiveProfile();
@@ -222,18 +242,18 @@ hookCommand
   });
 
 hookCommand
-  .command('activate')
-  .description('Generate activation script for a profile')
-  .argument('<profile>', 'Profile name to activate')
+  .command("activate")
+  .description("Generate activation script for a profile")
+  .argument("<profile>", "Profile name to activate")
   .action(async (profileName: string) => {
     try {
       const profileManager = new ProfileManager();
       const profile = await profileManager.getProfile(profileName);
-      
+
       if (!profile) {
         process.exit(1);
       }
-      
+
       // Apply git configuration
       if (GitConfigManager.isGitAvailable()) {
         try {
@@ -242,12 +262,14 @@ hookCommand
           // Silent failure for git config
         }
       }
-      
+
       // Generate and output activation script
       const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
-      const activationScript = EnvironmentManager.generateActivationScript(profile, profileDir);
+      const activationScript = EnvironmentManager.generateActivationScript(
+        profile,
+        profileDir
+      );
       console.log(activationScript);
-      
     } catch (err) {
       // Silent failure for hook operations
       process.exit(1);
@@ -255,14 +277,14 @@ hookCommand
   });
 
 hookCommand
-  .command('deactivate')
-  .description('Generate deactivation script for a profile')
-  .argument('<profile>', 'Profile name to deactivate')
+  .command("deactivate")
+  .description("Generate deactivation script for a profile")
+  .argument("<profile>", "Profile name to deactivate")
   .action(async (profileName: string) => {
     try {
       const profileManager = new ProfileManager();
       const profile = await profileManager.getProfile(profileName);
-      
+
       // Clear git configuration
       if (GitConfigManager.isGitAvailable()) {
         try {
@@ -271,12 +293,14 @@ hookCommand
           // Silent failure for git config
         }
       }
-      
+
       // Generate and output deactivation script
       const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
-      const deactivationScript = EnvironmentManager.generateDeactivationScript(profile || undefined, profileDir);
+      const deactivationScript = EnvironmentManager.generateDeactivationScript(
+        profile || undefined,
+        profileDir
+      );
       console.log(deactivationScript);
-      
     } catch (err) {
       // Silent failure for hook operations
       process.exit(1);
