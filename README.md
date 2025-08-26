@@ -290,4 +290,4 @@ This creates single executables for macOS, Linux, and Windows in the `build/` di
 
 ## License
 
-ISC
+MIT
