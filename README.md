@@ -17,6 +17,10 @@ Kontext allows developers to define and switch between distinct development prof
 - **Cross-shell Support**: Works with Bash, Zsh, and Fish shells
 - **Modern Command Structure**: Intuitive `profile` and `tag` command groups for organized management
 
+---
+
+⭐ **If you find Kontext useful, please consider starring the repository!** It helps others discover the project and motivates continued development.
+
 ## Installation
 
 Install Kontext globally via npm:
