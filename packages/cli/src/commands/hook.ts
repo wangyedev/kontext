@@ -273,7 +273,8 @@ hookCommand
       }
       
       // Generate and output deactivation script
-      const deactivationScript = EnvironmentManager.generateDeactivationScript(profile || undefined);
+      const profileDir = `${profileManager.getProfilesPath()}/${profileName}`;
+      const deactivationScript = EnvironmentManager.generateDeactivationScript(profile || undefined, profileDir);
       console.log(deactivationScript);
       
     } catch (err) {

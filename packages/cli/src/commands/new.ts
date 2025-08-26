@@ -189,6 +189,7 @@ export const newCommand = new Command('new')
       console.log('');
       console.log(info('Hooks (optional)'));
       console.log('Hooks allow you to run custom scripts when the profile is activated or deactivated.');
+      console.log('Hook scripts will be stored in the profile directory.');
       const hooksAnswers = await inquirer.prompt([
         {
           type: 'confirm',
@@ -197,37 +198,31 @@ export const newCommand = new Command('new')
           default: false
         },
         {
-          type: 'input',
-          name: 'activateHook',
-          message: 'Path to activation hook script (runs when profile activates):',
+          type: 'confirm',
+          name: 'createActivateHook',
+          message: 'Create activation hook script (runs when profile activates)?',
           when: (answers) => answers.setupHooks,
-          validate: (input: string) => !input.trim() || input.trim() ? true : 'Hook path cannot be empty if provided'
+          default: true
         },
         {
-          type: 'input',
-          name: 'deactivateHook',
-          message: 'Path to deactivation hook script (runs when profile deactivates):',
+          type: 'confirm',
+          name: 'createDeactivateHook',
+          message: 'Create deactivation hook script (runs when profile deactivates)?',
           when: (answers) => answers.setupHooks,
-          validate: (input: string) => !input.trim() || input.trim() ? true : 'Hook path cannot be empty if provided'
+          default: true
         }
       ]);
       
-      // Validate hook paths if provided
+      // Hook paths will be set to profile directory locations
+      let activateHookPath: string | undefined;
+      let deactivateHookPath: string | undefined;
+      
       if (hooksAnswers.setupHooks) {
-        if (hooksAnswers.activateHook && hooksAnswers.activateHook.trim()) {
-          try {
-            await HookManager.validateHookPath(hooksAnswers.activateHook.trim());
-          } catch (err) {
-            console.log(warning(`Activation hook validation failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-          }
+        if (hooksAnswers.createActivateHook) {
+          activateHookPath = '${KONTEXT_PROFILE_DIR}/hooks/activate.sh';
         }
-        
-        if (hooksAnswers.deactivateHook && hooksAnswers.deactivateHook.trim()) {
-          try {
-            await HookManager.validateHookPath(hooksAnswers.deactivateHook.trim());
-          } catch (err) {
-            console.log(warning(`Deactivation hook validation failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-          }
+        if (hooksAnswers.createDeactivateHook) {
+          deactivateHookPath = '${KONTEXT_PROFILE_DIR}/hooks/deactivate.sh';
         }
       }
       
@@ -265,9 +260,9 @@ export const newCommand = new Command('new')
           scriptPath: scriptAnswers.setupScript ? scriptAnswers.scriptPath : undefined
         } : undefined,
         dotfiles: Object.keys(dotfiles).length > 0 ? dotfiles : undefined,
-        hooks: hooksAnswers.setupHooks && (hooksAnswers.activateHook?.trim() || hooksAnswers.deactivateHook?.trim()) ? {
-          onActivate: hooksAnswers.activateHook?.trim() || undefined,
-          onDeactivate: hooksAnswers.deactivateHook?.trim() || undefined
+        hooks: hooksAnswers.setupHooks && (activateHookPath || deactivateHookPath) ? {
+          onActivate: activateHookPath,
+          onDeactivate: deactivateHookPath
         } : undefined
       };
       
@@ -299,10 +294,10 @@ export const newCommand = new Command('new')
         console.log(`Configuration files: ${Object.keys(profile.dotfiles).length}`);
       }
       if (profile.hooks?.onActivate) {
-        console.log(`Activation hook: ${profile.hooks.onActivate}`);
+        console.log(`Activation hook: hooks/activate.sh`);
       }
       if (profile.hooks?.onDeactivate) {
-        console.log(`Deactivation hook: ${profile.hooks.onDeactivate}`);
+        console.log(`Deactivation hook: hooks/deactivate.sh`);
       }
       
       // Confirm creation
@@ -326,6 +321,11 @@ export const newCommand = new Command('new')
       const profileDir = path.join(profileManager.getProfilesPath(), profileName);
       await createDotfiles(profileDir, selectedDotfiles, gitAnswers, dotfileAnswers);
       
+      // Create hook scripts if configured
+      if (hooksAnswers.setupHooks) {
+        await createHookScripts(profileDir, hooksAnswers);
+      }
+      
       console.log('');
       console.log(success(`Profile "${profileName}" created successfully!`));
       console.log('');
@@ -340,6 +340,16 @@ export const newCommand = new Command('new')
           const fileName = path.basename(dotfiles[target].replace('${KONTEXT_PROFILE_DIR}/', ''));
           console.log(`   ${fileName}`);
         });
+        console.log('');
+      }
+      if (profile.hooks) {
+        console.log(info('🪝 Hook Scripts Created:'));
+        if (profile.hooks.onActivate) {
+          console.log('   hooks/activate.sh');
+        }
+        if (profile.hooks.onDeactivate) {
+          console.log('   hooks/deactivate.sh');
+        }
         console.log('');
       }
       console.log(info('🛠️  Useful Commands:'));
@@ -404,5 +414,56 @@ async function createDotfiles(
     }
   } catch (err) {
     console.warn(warning(`Warning: Failed to create some dotfiles: ${err instanceof Error ? err.message : 'Unknown error'}`));
+  }
+}
+
+// Helper function to create hook scripts with default content
+async function createHookScripts(
+  profileDir: string,
+  hooksAnswers: any
+): Promise<void> {
+  try {
+    const hooksDir = path.join(profileDir, 'hooks');
+    await fs.promises.mkdir(hooksDir, { recursive: true });
+
+    if (hooksAnswers.createActivateHook) {
+      const activateContent = `#!/bin/bash
+# Activation hook for profile
+# This script runs when the profile is activated
+# Environment variables available:
+#   KONTEXT_PROFILE - The profile name
+#   KONTEXT_HOOK_TYPE - "activate"
+#   KONTEXT_PROFILE_DIR - Path to the profile directory
+
+echo "Activating profile: $KONTEXT_PROFILE"
+
+# Add your activation commands here
+# Example:
+# export MY_CUSTOM_VAR="value"
+# echo "Profile $KONTEXT_PROFILE is now active"
+`;
+      await fs.promises.writeFile(path.join(hooksDir, 'activate.sh'), activateContent, { mode: 0o755 });
+    }
+
+    if (hooksAnswers.createDeactivateHook) {
+      const deactivateContent = `#!/bin/bash
+# Deactivation hook for profile
+# This script runs when the profile is deactivated
+# Environment variables available:
+#   KONTEXT_PROFILE - The profile name
+#   KONTEXT_HOOK_TYPE - "deactivate"
+#   KONTEXT_PROFILE_DIR - Path to the profile directory
+
+echo "Deactivating profile: $KONTEXT_PROFILE"
+
+# Add your deactivation commands here
+# Example:
+# unset MY_CUSTOM_VAR
+# echo "Profile $KONTEXT_PROFILE has been deactivated"
+`;
+      await fs.promises.writeFile(path.join(hooksDir, 'deactivate.sh'), deactivateContent, { mode: 0o755 });
+    }
+  } catch (err) {
+    console.warn(warning(`Warning: Failed to create hook scripts: ${err instanceof Error ? err.message : 'Unknown error'}`));
   }
 }

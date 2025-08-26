@@ -121,8 +121,8 @@ dotfiles:
   ~/.vimrc: ${KONTEXT_PROFILE_DIR}/.vimrc
   ~/.tmux.conf: ${KONTEXT_PROFILE_DIR}/.tmux.conf
 hooks:
-  on_activate: ${KONTEXT_PROFILE_DIR}/activate.sh
-  on_deactivate: ${KONTEXT_PROFILE_DIR}/deactivate.sh
+  on_activate: ${KONTEXT_PROFILE_DIR}/hooks/activate.sh
+  on_deactivate: ${KONTEXT_PROFILE_DIR}/hooks/deactivate.sh
 ```
 
 ### Managing Configurations
@@ -205,7 +205,7 @@ When hooks execute, they receive these environment variables:
 
 ### Example Hook Scripts
 
-**Activation Hook** (`~/.config/kontext/hooks/work-activate.sh`):
+**Activation Hook** (`~/.config/kontext/profiles/work/hooks/activate.sh`):
 ```bash
 #!/bin/bash
 echo "🚀 Starting work session for $KONTEXT_PROFILE"
@@ -223,7 +223,7 @@ sudo vpn-connect work-profile
 osascript -e 'display notification "Work environment activated" with title "Kontext"'
 ```
 
-**Deactivation Hook** (`~/.config/kontext/hooks/work-deactivate.sh`):
+**Deactivation Hook** (`~/.config/kontext/profiles/work/hooks/deactivate.sh`):
 ```bash
 #!/bin/bash
 echo "🛑 Ending work session for $KONTEXT_PROFILE"
@@ -247,14 +247,18 @@ Add hooks to your profile YAML file:
 
 ```yaml
 hooks:
-  on_activate: /path/to/activate-script.sh
-  on_deactivate: /path/to/deactivate-script.sh
+  on_activate: ${KONTEXT_PROFILE_DIR}/hooks/activate.sh
+  on_deactivate: ${KONTEXT_PROFILE_DIR}/hooks/deactivate.sh
 ```
 
-Hooks support:
+Hook scripts are stored in the `hooks/` directory within each profile folder alongside other configuration files. This ensures all profile-related assets are centrally located.
+
+Hooks also support:
 - Absolute paths (`/usr/local/bin/script.sh`)
 - Home directory expansion (`~/scripts/hook.sh`)
 - Relative paths (resolved from current directory)
+
+When creating profiles with `kontext profile new`, you can choose to automatically create template hook scripts that are stored in the profile directory.
 
 ### Error Handling
 
