@@ -17,7 +17,7 @@ program
   .description(
     "A CLI tool for managing development profiles and automating shell environment switching"
   )
-  .version("1.6.2")
+  .version("1.6.4")
   .option("-v", "output the version number", () => {
     console.log(program.version());
     process.exit(0);

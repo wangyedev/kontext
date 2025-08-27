@@ -122,21 +122,14 @@ export class EnvironmentManager {
    * Generates shell script content for profile activation
    */
   static generateActivationScript(profile: Profile, profileDir: string): string {
-    const commands = [
-      '#!/bin/bash',
-      `# Kontext profile activation script for: ${profile.name}`,
-      '',
-    ];
+    const commands: string[] = [];
     
     // Set profile directory first
-    commands.push('# Set profile directory');
     commands.push(`export KONTEXT_PROFILE_DIR="${profileDir}"`);
-    commands.push('');
     
     // Execute activation hook first
     if (profile.hooks?.onActivate) {
       const hookPath = ConfigFileManager.resolveProfilePath(profileDir, profile.hooks.onActivate);
-      commands.push('# Execute activation hook');
       commands.push(`if [ -f "${hookPath}" ]; then`);
       commands.push(`  export KONTEXT_PROFILE="${profile.name}"`);
       commands.push(`  export KONTEXT_HOOK_TYPE="activate"`);
@@ -144,18 +137,14 @@ export class EnvironmentManager {
       commands.push('else');
       commands.push(`  echo "Warning: Activation hook not found: ${hookPath}" >&2`);
       commands.push('fi');
-      commands.push('');
     }
     
     // Add .env file variables first
     if (profile.environment?.envFile) {
       const envFilePath = ConfigFileManager.resolveProfilePath(profileDir, profile.environment.envFile);
-      commands.push('# Load .env file variables');
       commands.push(`if [ -f "${envFilePath}" ]; then`);
       commands.push(`  while IFS='=' read -r key value; do`);
-      commands.push(`    # Skip empty lines and comments`);
       commands.push(`    [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue`);
-      commands.push(`    # Remove quotes if present`);
       commands.push(`    value=\${value#\\"}; value=\${value%\\"}`);
       commands.push(`    value=\${value#\\'}; value=\${value%\\'}`);
       commands.push(`    export "$key"="$value"`);
@@ -163,32 +152,26 @@ export class EnvironmentManager {
       commands.push('else');
       commands.push(`  echo "Warning: Environment file not found: ${envFilePath}" >&2`);
       commands.push('fi');
-      commands.push('');
     }
     
     // Add environment variables (can override .env file variables)
     if (profile.environment?.variables) {
-      commands.push('# Environment variables');
       for (const [key, value] of Object.entries(profile.environment.variables)) {
         commands.push(`export ${key}="${this.escapeShellValue(value)}"`);
       }
-      commands.push('');
     }
     
     // Add script sourcing
     if (profile.environment?.scriptPath) {
       const scriptPath = this.resolveScriptPath(profile.environment.scriptPath, profileDir);
-      commands.push('# Source profile script');
       commands.push(`if [ -f "${scriptPath}" ]; then`);
       commands.push(`  source "${scriptPath}"`);
       commands.push('else');
       commands.push(`  echo "Warning: Profile script not found: ${scriptPath}" >&2`);
       commands.push('fi');
-      commands.push('');
     }
     
     // Set profile tracking
-    commands.push('# Set current profile');
     commands.push(`export KONTEXT_CURRENT_PROFILE="${profile.name}"`);
     
     return commands.join('\n');
@@ -198,45 +181,33 @@ export class EnvironmentManager {
    * Generates shell script content for profile deactivation
    */
   static generateDeactivationScript(profile?: Profile, profileDir?: string): string {
-    const commands = [
-      '#!/bin/bash',
-      '# Kontext profile deactivation script',
-      '',
-    ];
+    const commands: string[] = [];
     
     // Unset .env file variables first
     if (profile?.environment?.envFile && profileDir) {
       const envFilePath = ConfigFileManager.resolveProfilePath(profileDir, profile.environment.envFile);
-      commands.push('# Unset .env file variables');
       commands.push(`if [ -f "${envFilePath}" ]; then`);
       commands.push(`  while IFS='=' read -r key value; do`);
-      commands.push(`    # Skip empty lines and comments`);
       commands.push(`    [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue`);
       commands.push(`    unset "$key"`);
       commands.push(`  done < "${envFilePath}"`);
       commands.push('fi');
-      commands.push('');
     }
     
     // Unset environment variables if we know what they are
     if (profile?.environment?.variables) {
-      commands.push('# Unset environment variables');
       for (const key of Object.keys(profile.environment.variables)) {
         commands.push(`unset ${key}`);
       }
-      commands.push('');
     }
     
     // Unset profile tracking
-    commands.push('# Clear current profile');
     commands.push('unset KONTEXT_CURRENT_PROFILE');
     commands.push('unset KONTEXT_PROFILE_DIR');
     
     // Execute deactivation hook last
     if (profile?.hooks?.onDeactivate && profileDir) {
       const hookPath = ConfigFileManager.resolveProfilePath(profileDir, profile.hooks.onDeactivate);
-      commands.push('');
-      commands.push('# Execute deactivation hook');
       commands.push(`if [ -f "${hookPath}" ]; then`);
       commands.push(`  export KONTEXT_PROFILE="${profile.name}"`);
       commands.push(`  export KONTEXT_HOOK_TYPE="deactivate"`);

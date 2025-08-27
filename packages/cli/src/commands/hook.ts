@@ -64,12 +64,12 @@ __kontext_check_directory() {
     if [[ "$active_profile" != "$__kontext_current_profile" ]]; then
       if [[ -n "$__kontext_current_profile" ]]; then
         # Deactivate current profile
-        eval "$(kontext hook deactivate "$__kontext_current_profile" 2>/dev/null)"
+        eval "$(kontext hook deactivate "$__kontext_current_profile" 2>/dev/null)" >/dev/null
       fi
       
       if [[ -n "$active_profile" ]]; then
         # Activate new profile
-        eval "$(kontext hook activate "$active_profile" 2>/dev/null)"
+        eval "$(kontext hook activate "$active_profile" 2>/dev/null)" >/dev/null
         __kontext_current_profile="$active_profile"
       else
         __kontext_current_profile=""
@@ -170,11 +170,11 @@ function __kontext_check_directory --on-variable PWD
         
         if test "$active_profile" != "$__kontext_current_profile"
             if test -n "$__kontext_current_profile"
-                eval (kontext hook deactivate "$__kontext_current_profile" 2>/dev/null)
+                eval (kontext hook deactivate "$__kontext_current_profile" 2>/dev/null) >/dev/null
             end
             
             if test -n "$active_profile"
-                eval (kontext hook activate "$active_profile" 2>/dev/null)
+                eval (kontext hook activate "$active_profile" 2>/dev/null) >/dev/null
                 set -g __kontext_current_profile "$active_profile"
             else
                 set -g __kontext_current_profile ""
