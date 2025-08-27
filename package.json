@@ -1,6 +1,6 @@
 {
   "name": "kontext-cli",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "A CLI tool for managing development profiles and automating shell environment switching",
   "main": "dist/cli/src/index.js",
   "bin": {
