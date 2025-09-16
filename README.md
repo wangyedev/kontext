@@ -359,6 +359,34 @@ pnpm run package
 
 This creates single executables for macOS, Linux, and Windows in the `build/` directory.
 
+### Contributing
+
+This project uses [Release Please](https://github.com/googleapis/release-please) for automated versioning and publishing. When contributing:
+
+#### Conventional Commits
+
+Use conventional commit format for automatic version bumping:
+
+- `feat: add new feature` → Minor version bump (1.6.5 → 1.7.0)
+- `fix: resolve bug` → Patch version bump (1.6.5 → 1.6.6)
+- `feat!: breaking change` → Major version bump (1.6.5 → 2.0.0)
+- `chore: update dependencies` → No version bump
+- `docs: update README` → No version bump
+
+#### Release Process
+
+1. **Push changes** to `main` branch with conventional commit messages
+2. **Release Please** automatically creates/updates a release PR with:
+   - Version bump based on commit types
+   - Generated changelog from commit messages
+3. **Review and merge** the release PR to trigger automated publishing to npm
+
+No manual version bumping or changelog maintenance required!
+
+## Release Notes
+
+All releases are automatically documented with generated changelogs. View the latest releases and changelogs on the [GitHub Releases page](https://github.com/wangyedev/kontext/releases).
+
 ## License
 
 MIT
