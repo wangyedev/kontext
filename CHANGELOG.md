@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3](https://github.com/wangyedev/kontext/compare/v1.0.2...v1.0.3) (2025-09-16)
+
+
+### Bug Fixes
+
+* remove test step from npm-publish workflow ([2959600](https://github.com/wangyedev/kontext/commit/2959600c86dc66ba4da177e333ae48f48a220c7e))
+
 ## [1.0.2](https://github.com/wangyedev/kontext/compare/v1.0.1...v1.0.2) (2025-09-16)
 
 
