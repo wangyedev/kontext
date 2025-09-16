@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1](https://github.com/wangyedev/kontext/compare/v1.0.0...v1.0.1) (2025-09-16)
+
+
+### Bug Fixes
+
+* update README to include contributing guidelines and release process ([833e0f3](https://github.com/wangyedev/kontext/commit/833e0f31bd41ca48229bf78d1f0e6f0d6909133d))
+
 ## 1.0.0 (2025-09-16)
 
 
