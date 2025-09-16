@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2](https://github.com/wangyedev/kontext/compare/v1.0.1...v1.0.2) (2025-09-16)
+
+
+### Bug Fixes
+
+* update pnpm version in npm-publish workflow to 10 ([8b84b71](https://github.com/wangyedev/kontext/commit/8b84b71a8cf3ead0d3ee586f8ee88b94a96eff35))
+
 ## [1.0.1](https://github.com/wangyedev/kontext/compare/v1.0.0...v1.0.1) (2025-09-16)
 
 
