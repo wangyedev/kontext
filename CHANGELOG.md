@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0 (2025-09-16)
+
+
+### Features
+
+* udpate ci/cd settings ([81c7cf6](https://github.com/wangyedev/kontext/commit/81c7cf63144f8b288296c50c43044498c5783f2c))
+
 ## [1.3.0] - 2025-08-25
 
 ### Added
