@@ -1,94 +1,55 @@
-# This workflow will run tests and automatically publish to npm when code is pushed to main
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
+# Release Please workflow for automated versioning and publishing
+# This creates release PRs based on conventional commits and publishes when merged
 
-name: Auto Publish
+name: Release Please
 
 on:
   push:
     branches: [main]
 
-concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
-
 permissions:
   contents: write
+  pull-requests: write
   id-token: write
 
 jobs:
-  build:
+  release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run build
-      - run: pnpm test
-
-  version-and-publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          release-type: node
+
+  build-and-publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run build
 
-      # Configure git for version commit
-      - name: Configure Git
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      # Check if package.json was modified in this push (skip version bump if already done)
-      - name: Check if version was already bumped
-        id: version_check
-        run: |
-          if git diff HEAD~1 HEAD --name-only | grep -q "package.json"; then
-            echo "version_bumped=true" >> $GITHUB_OUTPUT
-          else
-            echo "version_bumped=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Build project
+        run: pnpm run build
 
-      # Bump version only if package.json wasn't modified
-      - name: Bump version
-        if: steps.version_check.outputs.version_bumped == 'false'
-        run: |
-          pnpm version patch --no-git-tag-version
-          git add package.json
-          git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
-          git push
+      - name: Run tests
+        run: pnpm test
 
-      # Get current version for release
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Test CLI
+        run: node dist/cli/src/index.js --version
 
-      # Test the CLI works
-      - run: node dist/cli/src/index.js --version
-
-      # Create GitHub release
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: Release v${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-      # Publish to npm
-      - run: pnpm publish --no-git-checks
+      - name: Publish to npm
+        run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
