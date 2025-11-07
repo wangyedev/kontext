@@ -32,10 +32,10 @@ pnpm run clean        # Clean all dist directories
 ### Local Development Testing
 ```bash
 # Test the CLI locally without installing globally
-node /Users/yewang/Desktop/code/personal/hobby/kontext/packages/cli/dist/cli/src/index.js <command>
+node dist/cli/src/index.js <command>
 
 # Or create an alias for easier testing
-alias kontext-dev="node /Users/yewang/Desktop/code/personal/hobby/kontext/dist/cli/src/index.js"
+alias kontext-dev="node <path-to-project-root>/dist/cli/src/index.js"
 ```
 
 ## Architecture
